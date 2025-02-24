@@ -48,7 +48,7 @@ private const val TAG = "Settings"
 
 @Composable
 fun Settings(paddingValues: PaddingValues, settingsViewModel: SettingsViewModel = viewModel()) {
-    val settings by settingsViewModel.settingsFlow.collectAsState(com.example.assistant.models.Settings.withDefaults())
+    val settings by settingsViewModel.settingsFlow.collectAsState(com.example.assistant.models.Settings.create())
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier
@@ -57,11 +57,11 @@ fun Settings(paddingValues: PaddingValues, settingsViewModel: SettingsViewModel 
             .padding(16.dp)
     ) {
         TextFieldDialog(
-            value = settings.openAiKey,
+            value = settings.xaiKey,
             onConfirmation = { settingsViewModel.onOpenAiKeyChanged(it) },
             label = "OpenAI API key"
         )
-        ItemPicker("Model", models.map { it.name }, settings.selectedModel.name) {
+        ItemPicker("Model", models.map { it.name }, settings.model.name) {
             settingsViewModel.onModelSelected(it)
         }
         HorizontalDivider()
@@ -76,7 +76,6 @@ fun Settings(paddingValues: PaddingValues, settingsViewModel: SettingsViewModel 
                 .fillMaxWidth()
         )
         HorizontalDivider()
-        Usage(settings.usageCounter)
     }
 }
 

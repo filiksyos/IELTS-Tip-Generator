@@ -2,63 +2,49 @@ package com.example.assistant.models
 
 import android.util.Log
 import com.example.assistant.BuildConfig
-import com.example.assistant.data.assistants
-import com.example.assistant.data.models
 
+// Settings data class for app configuration - Using Mixtral model through XAI/Groq API only
 data class Settings(
-    var selectedModel: Model,
+    // Fixed to Mixtral model - no other options needed
+    val model: Model = Model("mixtral-8x7b-32768"),
+    // Currently active assistant profile
     var selectedAssistant: String,
+    // Map of assistant names to their system prompts
     var prompts: Map<String, String>,
-    var openAiKey: String,
-    var usageCounter: Double
+    // XAI API key from BuildConfig
+    val xaiKey: String = BuildConfig.XAI_API_KEY
 ) {
     companion object {
         private const val TAG = "Settings"
 
-        fun withDefaults(
-            selectedModel: Model? = null,
+        /**
+         * Creates a Settings instance with required assistant configuration
+         * 
+         * @param selectedAssistant Assistant name, defaults to "Personal Assistant"
+         * @param prompts System prompts for assistants, defaults to basic helpful assistant
+         */
+        fun create(
             selectedAssistant: String? = null,
-            prompts: Map<String, String>? = null,
-            openAiKey: String? = null,
-            usageCounter: Double? = null
+            prompts: Map<String, String>? = null
         ): Settings {
-            Log.d(TAG, "selectedModel: $selectedModel")
-            Log.d(TAG, "selectedAssistant: $selectedAssistant")
-            Log.d(TAG, "prompts: $prompts")
-            Log.d(TAG, "openAiKey: $openAiKey")
-            Log.d(TAG, "usageCounter: $usageCounter")
+            Log.d(TAG, "Creating settings")
+            
+            // Only assistant configuration is customizable
+            val assistant = selectedAssistant ?: "Personal Assistant"
+            val assistantPrompts = prompts ?: mapOf(
+                assistant to "You are a helpful assistant."
+            )
 
-            val defaultModel = try {
-                models.firstOrNull() ?: Model("default_model", inputPrice = 0.0, outputPrice = 0.0)
-            } catch (e: Exception) {
-                Model("default_model", inputPrice = 0.0, outputPrice = 0.0)
-            }
-
-            val defaultAssistant = try {
-                assistants.firstOrNull()?.name ?: "default_assistant"
-            } catch (e: Exception) {
-                "default_assistant"
-            }
-
-            val defaultPrompts = try {
-                assistants.associateBy({ it.name }, { prompts?.get(it.name) ?: it.defaultPrompt })
-            } catch (e: Exception) {
-                mapOf("default_assistant" to "default_prompt")
-            }
-
-            val defaultOpenAiKey = try {
-                BuildConfig.OPENAI_API_KEY ?: "default_openai_key"
-            } catch (e: Exception) {
-                "default_openai_key"
-            }
+            Log.d(TAG, "Using assistant: $assistant")
+            Log.d(TAG, "Using prompts: $assistantPrompts")
+            Log.d(TAG, "Using XAI key: ${BuildConfig.XAI_API_KEY.take(5)}...")
 
             return Settings(
-                selectedModel = selectedModel ?: defaultModel,
-                selectedAssistant = selectedAssistant ?: defaultAssistant,
-                prompts = prompts ?: defaultPrompts,
-                openAiKey = openAiKey ?: defaultOpenAiKey,
-                usageCounter = usageCounter ?: 0.0
-            )
+                selectedAssistant = assistant,
+                prompts = assistantPrompts
+            ).also {
+                Log.d(TAG, "Settings created successfully")
+            }
         }
     }
 }

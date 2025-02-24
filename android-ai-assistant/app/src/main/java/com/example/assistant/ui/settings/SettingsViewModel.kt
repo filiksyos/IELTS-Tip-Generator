@@ -3,9 +3,7 @@ package com.example.assistant.ui.settings
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.assistant.OPENAI_KEY
 import com.example.assistant.SELECTED_ASSISTANT
-import com.example.assistant.SELECTED_MODEL
 import com.example.assistant.getSettingsFlow
 import com.example.assistant.updatePrompt
 import com.example.assistant.updateSetting
@@ -22,7 +20,7 @@ class SettingsViewModel(private val application: Application): AndroidViewModel(
 
     fun onModelSelected(model: String) {
         viewModelScope.launch {
-            updateSetting(application, SELECTED_MODEL, model)
+            //updateSetting(application, SELECTED_MODEL, model)
         }
     }
 
@@ -40,7 +38,7 @@ class SettingsViewModel(private val application: Application): AndroidViewModel(
 
     fun onOpenAiKeyChanged(key: String) {
         runBlocking {
-            updateSetting(application, OPENAI_KEY, key)
+            //updateSetting(application, OPENAI_KEY, key)
         }
     }
 

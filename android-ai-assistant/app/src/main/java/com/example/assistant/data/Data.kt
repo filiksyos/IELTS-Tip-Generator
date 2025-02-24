@@ -27,8 +27,8 @@ val assistants = listOf(
 )
 
 val models = listOf(
-    Model("gpt-4o-mini", 0.15 / 1000000, 0.6 / 1000000),
-    Model("gpt-4o", 5.0 / 1000000, 15.0 / 1000000)
+    Model("gpt-4o-mini"),
+    Model("gpt-4o")
 )
 
 const val MAX_USAGE = 0.5

@@ -21,7 +21,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.vectorResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.assistant.R
-import com.example.assistant.data.MAX_USAGE
+import com.example.assistant.ui.AssistantViewModel
 import com.example.assistant.ui.chat.Chat
 import com.example.assistant.ui.settings.Settings
 import com.example.assistant.ui.speak.Speak
@@ -69,8 +69,10 @@ fun Assistant(assistantViewModel: AssistantViewModel = viewModel(factory = Assis
         }
     ) { paddingValues ->
         val messages by assistantViewModel.messagesFlow.collectAsState(null)
-        val settings by assistantViewModel.settingsFlow.collectAsState(com.example.assistant.models.Settings.withDefaults())
-        val inputEnabled = !assistantViewModel.gettingCompletion && settings.usageCounter <= MAX_USAGE
+        val settings by assistantViewModel.settingsFlow.collectAsState(
+            com.example.assistant.models.Settings.create()
+        )
+        val inputEnabled = !assistantViewModel.gettingCompletion
         LaunchedEffect(messages?.isEmpty()) {
             if (messages != null && messages!!.isEmpty()) {
                 assistantViewModel.addFirstMessage(settings.selectedAssistant)

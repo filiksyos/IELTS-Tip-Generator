@@ -11,18 +11,14 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.example.assistant.AssistantApplication
-import com.example.assistant.addCost
+import com.example.assistant.api.ApiService
+import com.example.assistant.api.ChatApi
 import com.example.assistant.data.assistants
 import com.example.assistant.getSettingsFlow
 import com.example.assistant.models.ChatCompletion
-import com.example.assistant.models.ChatResponse
 import com.example.assistant.models.Message
-import com.example.assistant.models.Model
 import com.example.assistant.models.Settings
-import com.example.assistant.models.StreamOptions
-import com.example.assistant.models.Usage
-import com.example.assistant.network.OpenAIService
-import kotlinx.coroutines.CancellationException
+import com.example.assistant.ui.chat.ChatViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -33,7 +29,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-
 
 private val json = Json { ignoreUnknownKeys = true }
 
@@ -57,6 +52,9 @@ class AssistantViewModel(private val application: AssistantApplication): Android
     }
 
     private val messagesRepository = application.messagesRepository
+    private val chatViewModel = ChatViewModel(
+        chatApi = ApiService.create().create(ChatApi::class.java)
+    )
 
     val settingsFlow = getSettingsFlow(application)
     val messagesFlow = settingsFlow
@@ -106,50 +104,37 @@ class AssistantViewModel(private val application: AssistantApplication): Android
             .addContext(settings.selectedAssistant, settings.prompts[settings.selectedAssistant] ?: "")
             .map { mapOf("role" to it.role, "content" to it.content) }
 
-        val completionMessage = Message(assistant = settings.selectedAssistant, role = "assistant", content = "")
-        completionMessage.id = messagesRepository.insertMessage(completionMessage)
-
         try {
-            val chat = ChatCompletion(settings.selectedModel.name, messagesToBeSent, true, StreamOptions(true))
-            Log.d(TAG, "Sending chat: $chat")
-            val response = OpenAIService.retrofitService.streamChatCompletion(
-                "Bearer ${settings.openAiKey}",
-                chat
+            val chat = ChatCompletion(
+                model = "mixtral-8x7b-32768",
+                messages = messagesToBeSent,
+                stream = true
             )
-
-            val input = response.byteStream().bufferedReader()
-            while (isActive) {
-                val line = withContext(Dispatchers.IO) {
-                    input.readLine()
-                }
-                if (line.isNullOrBlank())
-                    continue
-                val data = line.substringAfter("data:").trim()
-                if (data == "[DONE]")
-                    break
-                val chatResponse = json.decodeFromString<ChatResponse>(data)
-                Log.d(TAG, "chatResponse: $chatResponse",)
-                if (chatResponse.choices.isNotEmpty()) {
-                    val content = chatResponse.choices.first().delta?.content
-                    completionMessage.addContent(content ?: "")
-                    messagesRepository.updateMessage(completionMessage)
-                }
-                if (chatResponse.usage != null) {
-                    Log.d(TAG, "Usage: ${chatResponse.usage}")
-                    addUsageCosts(settings.selectedModel, chatResponse.usage)
-                }
-            }
-            Log.d(TAG, "Finished getting completion: $completionMessage")
-        } catch (e: CancellationException) {
-            Log.d(TAG, "Getting completion cancelled")
+            Log.d(TAG, "Sending chat: $chat")
+            
+            // Get streaming response as string
+            val responseContent = chatViewModel.getCompletion(chat)
+            
+            // Create and save assistant message
+            val assistantMessage = Message(
+                assistant = settings.selectedAssistant,
+                role = "assistant",
+                content = responseContent
+            )
+            messagesRepository.insertMessage(assistantMessage)
+            
         } catch (e: Exception) {
-            Log.e(TAG, "OpenAI error", e)
-
-            completionMessage.content = "Error"
-            messagesRepository.updateMessage(completionMessage)
+            Log.e(TAG, "Chat error", e)
+            // Create error message
+            val errorMessage = Message(
+                assistant = settings.selectedAssistant,
+                role = "assistant",
+                content = "Error: ${e.message}"
+            )
+            messagesRepository.insertMessage(errorMessage)
+        } finally {
+            gettingCompletion = false
         }
-
-        gettingCompletion = false
     }
 
     private fun List<Message>.reduceMessages(): List<Message> {
@@ -163,11 +148,4 @@ class AssistantViewModel(private val application: AssistantApplication): Android
     private fun Message.addContent(content: String) {
         this.content += content
     }
-
-    private suspend fun addUsageCosts(model: Model, usage: Usage) {
-        val costs = usage.promptTokens * model.inputPrice + usage.completionTokens * model.outputPrice
-        Log.d(TAG, "Adding usage costs: $costs$")
-        addCost(application, costs)
-    }
-
 }

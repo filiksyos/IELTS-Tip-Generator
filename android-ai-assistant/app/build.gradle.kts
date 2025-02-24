@@ -28,7 +28,8 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "OPENAI_API_KEY", localProperties["OPENAI_API_KEY"].toString())
+            buildConfigField("String", "XAI_API_KEY", localProperties["XAI_API_KEY"].toString())
+            buildConfigField("String", "BASE_URL", "\"https://api.groq.com/openai/v1/\"")
         }
         release {
             isMinifyEnabled = true
@@ -36,7 +37,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "OPENAI_API_KEY", "\"\"")
+            buildConfigField("String", "XAI_API_KEY", "\"\"")
+            buildConfigField("String", "BASE_URL", "\"https://api.groq.com/openai/v1/\"")
         }
         create("staging") {
             initWith(getByName("release"))
@@ -85,6 +87,7 @@ dependencies {
     implementation("com.knuddels:jtokkit:1.0.0")
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
+    implementation("com.squareup.okhttp3:okhttp:4.9.3")
     ksp("androidx.room:room-compiler:2.6.1")
 
     // Retrofit
