@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16.3
+    container_name: chat_agent_postgres
+    environment:
+      POSTGRES_DB: postchain
+      POSTGRES_USER: postchain
+      POSTGRES_PASSWORD: postchain
+      POSTGRES_INITDB_ARGS: "--locale=C.UTF-8 --encoding=UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - chromi_postgres_data:/var/lib/postgresql/data
+volumes:
+  chromi_postgres_data:
