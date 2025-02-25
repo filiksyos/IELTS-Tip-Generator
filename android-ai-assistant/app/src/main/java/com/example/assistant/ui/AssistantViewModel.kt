@@ -76,8 +76,17 @@ class AssistantViewModel(private val application: AssistantApplication): Android
     }
 
     fun onNewMessage(text: String, messages: List<Message>, settings: Settings) {
-        getCompletionJob = viewModelScope.launch {
-            val newMessage = Message(assistant = settings.selectedAssistant, role = "user", content = text)
+        if (settings.selectedAssistant == "YouTube Search") {
+            val sanitizedText = text.trim()
+            if (sanitizedText.isEmpty()) return
+        }
+        
+        viewModelScope.launch {
+            val newMessage = Message(
+                assistant = settings.selectedAssistant,
+                role = "user",
+                content = text
+            )
             messagesRepository.insertMessage(newMessage)
             getCompletion(messages + newMessage, settings)
         }
