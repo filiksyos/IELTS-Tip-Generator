@@ -61,7 +61,7 @@ fun Settings(paddingValues: PaddingValues, settingsViewModel: SettingsViewModel 
             onConfirmation = { settingsViewModel.onOpenAiKeyChanged(it) },
             label = "OpenAI API key"
         )
-        ItemPicker("Model", models.map { it.name }, settings.model.name) {
+        ItemPicker("Model", models.map { it.id }, settings.model.id) {
             settingsViewModel.onModelSelected(it)
         }
         HorizontalDivider()
