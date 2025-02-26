@@ -1,0 +1,127 @@
+name: Android CI with Summary Generation
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  run-tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Grant execute permissions for Gradlew
+        run: chmod +x ./gradlew
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Cache Gradle dependencies and build
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            build
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 33
+          build-tools: 33.0.0
+
+      - name: Run tests and save results
+        run: |
+          mkdir -p test-results
+          # Save test output to testresults.txt, overwriting if it exists
+          ./gradlew cleanTest testDebugUnitTest > test-results/testresults.txt || true
+        continue-on-error: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: test-results/testresults.txt
+
+      - name: Commit and push test results
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Detect current branch dynamically
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+          # Overwrite the existing testresults.txt file completely
+          git add -f test-results/testresults.txt
+          git commit -m "Update test results [skip ci]" || echo "No changes to commit"
+
+          # Stash any remaining unstaged changes to clean the workspace
+          git stash --include-untracked || echo "Nothing to stash"
+
+          # Pull changes from the current branch and reapply stashed changes if necessary
+          git pull --rebase origin "$CURRENT_BRANCH" || git merge origin/"$CURRENT_BRANCH"
+          git stash pop || echo "No stashed changes to apply"
+
+          # Push the results to the current branch
+          git push origin "$CURRENT_BRANCH"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  generate-summary:
+    name: Generate Summary
+    needs: run-tests  # Ensure this job starts only after the run-tests job completes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip
+
+      - name: Generate summary
+        run: |
+          mkdir -p test-results
+          # Append test results to the summary file
+          python file_summary.py || echo "Error: Summary script failed!"
+          cat test-results/testresults.txt >> summary.txt
+
+      - name: Commit and push summary (if successful)
+        if: always()
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Detect current branch dynamically
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+          # Add and commit the summary file
+          git add summary.txt
+          git commit -m "Update summary.txt with test results [skip ci]" || echo "No changes to commit"
+
+          # Stash and pull changes to avoid conflicts
+          git stash --include-untracked || echo "Nothing to stash"
+          git pull --rebase origin "$CURRENT_BRANCH" || git merge origin/"$CURRENT_BRANCH"
+          git stash pop || echo "No stashed changes to apply"
+
+          # Push the summary file
+          git push origin "$CURRENT_BRANCH"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

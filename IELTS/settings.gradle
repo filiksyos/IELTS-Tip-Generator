@@ -1,0 +1,6 @@
+rootProject.name = "IELTSPreparationApp"
+
+include ':domain'
+include ':presentation'
+include ':data'
+include ':app'
