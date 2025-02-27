@@ -35,7 +35,10 @@ class DashboardViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = DashboardViewModel(useCase)
+        viewModel = DashboardViewModel(
+            useCase,
+            refreshQueriesUseCase = TODO()
+        )
     }
 
     @After

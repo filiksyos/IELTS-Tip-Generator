@@ -40,6 +40,7 @@ class DashboardFragment : Fragment() {
 
         setupAdapters()
         setupRecyclerViews()
+        setupRefreshButton()
         observeViewModel()
 
         dashboardViewModel.loadDashboardItems()
@@ -58,7 +59,13 @@ class DashboardFragment : Fragment() {
         RecyclerViewHelper.setupRecyclerView(binding.rvWriting, requireContext(), writingAdapter)
         RecyclerViewHelper.setupRecyclerView(binding.rvSpeaking, requireContext(), speakingAdapter)
     }
-
+    
+    private fun setupRefreshButton() {
+        binding.refreshButton.setOnClickListener {
+            Log.d("DashboardFragment", "Refresh button clicked")
+            dashboardViewModel.refreshQueries()
+        }
+    }
 
     private fun observeViewModel() {
         dashboardViewModel.dashboardItems.observe(viewLifecycleOwner, Observer { itemsMap ->
@@ -67,6 +74,12 @@ class DashboardFragment : Fragment() {
             itemsMap[DashboardCategoryType.LISTENING]?.let { listeningAdapter.submitList(it) }
             itemsMap[DashboardCategoryType.WRITING]?.let { writingAdapter.submitList(it) }
             itemsMap[DashboardCategoryType.SPEAKING]?.let { speakingAdapter.submitList(it) }
+        })
+        
+        // Observe refreshing state
+        dashboardViewModel.isRefreshing.observe(viewLifecycleOwner, Observer { isRefreshing ->
+            binding.refreshProgressBar.visibility = if (isRefreshing) View.VISIBLE else View.GONE
+            binding.refreshButton.visibility = if (isRefreshing) View.INVISIBLE else View.VISIBLE
         })
     }
 

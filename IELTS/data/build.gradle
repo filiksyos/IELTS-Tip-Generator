@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.0'
 }
 
 android {
@@ -12,6 +13,9 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
+        
+        // Add BuildConfig generation
+        buildConfigField "String", "GROQ_API_KEY", getApiKey()
     }
 
     buildTypes {
@@ -21,12 +25,30 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '11'
+        jvmTarget = '17'
     }
+    // Enable BuildConfig generation
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+// Function to get API key from local.properties
+def getApiKey() {
+    def properties = new Properties()
+    def localPropertiesFile = rootProject.file('local.properties')
+    if (localPropertiesFile.exists()) {
+        properties.load(localPropertiesFile.newDataInputStream())
+        def apiKey = properties.getProperty('groq_api_key')
+        if (apiKey != null) {
+            return "\"$apiKey\""
+        }
+    }
+    return '""' // Return empty string if not found
 }
 
 dependencies {
@@ -40,4 +62,13 @@ dependencies {
 
     // Koin for DI
     implementation 'io.insert-koin:koin-android:3.5.0'
+    
+    // Retrofit for API communication
+    implementation 'com.squareup.retrofit2:retrofit:2.11.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0'
+    implementation 'com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.3'
+    // Coroutines
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0'
 }
