@@ -76,7 +76,7 @@ class AssistantViewModel(private val application: AssistantApplication): Android
     }
 
     fun onNewMessage(text: String, messages: List<Message>, settings: Settings) {
-        if (settings.selectedAssistant == "YouTube Search") {
+        if (settings.selectedAssistant == "Multi-Search Generator") {
             val sanitizedText = text.trim()
             if (sanitizedText.isEmpty()) return
         }
@@ -130,6 +130,17 @@ class AssistantViewModel(private val application: AssistantApplication): Android
                 role = "assistant",
                 content = responseContent
             )
+            
+            // Process multi-search response if needed
+            if (settings.selectedAssistant == "Multi-Search Generator") {
+                Log.d(TAG, "Processing multi-search response")
+                // Simple text parsing for the new format
+                val queries = parseSearchQueries(responseContent)
+                if (queries.isNotEmpty()) {
+                    Log.d(TAG, "Parsed ${queries.size} search queries: $queries")
+                }
+            }
+            
             messagesRepository.insertMessage(assistantMessage)
             
         } catch (e: Exception) {
@@ -144,6 +155,16 @@ class AssistantViewModel(private val application: AssistantApplication): Android
         } finally {
             gettingCompletion = false
         }
+    }
+
+    /**
+     * Parses search queries from the response text
+     * Expects format: "query1", "query2", "query3"
+     */
+    private fun parseSearchQueries(response: String): List<String> {
+        val regex = """"([^"]+)"""".toRegex()
+        val matches = regex.findAll(response)
+        return matches.map { it.groupValues[1] }.toList()
     }
 
     private fun List<Message>.reduceMessages(): List<Message> {

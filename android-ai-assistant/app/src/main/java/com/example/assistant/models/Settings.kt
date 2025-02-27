@@ -9,7 +9,7 @@ data class Settings(
     // Fixed to Mixtral model - no other options needed
     val model: Model = Model("mixtral-8x7b-32768"),
     // Currently active assistant profile
-    var selectedAssistant: String = "Personal Assistant",
+    var selectedAssistant: String = "Multi-Search Generator",
     // Map of assistant names to their system prompts
     var prompts: Map<String, String> = assistants.associate {
         it.name to it.defaultPrompt 
@@ -28,8 +28,8 @@ data class Settings(
         /**
          * Creates a Settings instance with required assistant configuration
          * 
-         * @param selectedAssistant Assistant name, defaults to "YouTube Search"
-         * @param prompts System prompts for assistants, defaults to YouTube search query generator
+         * @param selectedAssistant Assistant name, defaults to "Multi-Search Generator"
+         * @param prompts System prompts for assistants, defaults to multi-search query generator
          * @param temperature Controls randomness (0.0-1.0), lower is more deterministic
          * @param maxTokens Maximum length of generated response
          */
@@ -42,23 +42,36 @@ data class Settings(
             Log.d(TAG, "Creating settings")
             
             // Only assistant configuration is customizable
-            val assistant = selectedAssistant ?: "YouTube Search"
+            val assistant = selectedAssistant ?: "Multi-Search Generator"
             val assistantPrompts = prompts ?: mapOf(
-                assistant to """You are a YouTube search query generator. 
-                |Your ONLY job is to convert user questions into effective YouTube search queries.
+                assistant to """You are a search query generator that provides multiple search options.
+                |Your job is to convert user questions into 3 different effective search queries.
                 |
                 |RESPONSE FORMAT:
-                |1. Respond ONLY with the search query in the format: "search_query"
-                |2. Do NOT include explanations, introductions, or additional text
-                |3. Keep queries concise (under 10 words when possible)
-                |4. Do NOT use markdown formatting
+                |Return exactly 3 search queries in this format:
+                |"first search query",
+                |"second search query with different focus",
+                |"third search query with another perspective"
+                |
+                |RULES:
+                |1. Always return EXACTLY 3 queries
+                |2. Each query must be in quotation marks and separated by commas
+                |3. Each query should offer a different perspective or focus
+                |4. Keep queries concise (under 10 words each)
+                |5. Do NOT include explanations or additional text
                 |
                 |Examples:
-                |User: "How do I make pasta carbonara?"
-                |Assistant: "pasta carbonara recipe easy homemade"
+                |User: "How do I learn programming?"
+                |Assistant: 
+                |"programming tutorials for beginners",
+                |"best programming languages to learn first",
+                |"project based programming learning"
                 |
-                |User: "Tell me about quantum physics"
-                |Assistant: "quantum physics explained simply"
+                |User: "Show me funny videos"
+                |Assistant:
+                |"funny videos 2022",
+                |"hilarious videos 2023",
+                |"funny YouTube videos humor"
                 |""".trimMargin()
             )
 
