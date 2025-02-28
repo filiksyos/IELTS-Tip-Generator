@@ -6,6 +6,8 @@ import com.example.data.api.ApiService
 import com.example.data.api.ChatApi
 import com.example.data.models.ChatCompletion
 import com.example.data.models.ChatResponse
+import com.example.data.models.UserPreferences
+import com.example.data.preferences.PreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -14,7 +16,9 @@ import java.util.regex.Pattern
 /**
  * Generates search queries for IELTS categories using AI
  */
-class AISearchQueryGenerator {
+class AISearchQueryGenerator(
+    private val preferencesManager: PreferencesManager
+) {
     private val TAG = "AISearchQueryGenerator"
     private val chatApi = ApiService.create().create(ChatApi::class.java)
     private val json = Json { 
@@ -29,33 +33,9 @@ class AISearchQueryGenerator {
      */
     suspend fun generateQueriesForAllCategories(): Map<DashboardCategory, String> = withContext(Dispatchers.IO) {
         val timestamp = System.currentTimeMillis()
-        val prompt = """
-            Generate 4 NEW and DIFFERENT search queries for IELTS exam preparation (timestamp: $timestamp).
-            Make these queries UNIQUE and DIFFERENT from previous generations.
-            Focus on specific sub-topics or aspects for each skill:
-
-            1. Reading
-            2. Listening
-            3. Writing
-            4. Speaking
-            
-            Each query should be specific and helpful for someone preparing for the IELTS exam.
-            
-            RESPONSE FORMAT:
-            Return exactly 4 search queries in this format:
-            "Reading: specific reading search query",
-            "Listening: specific listening search query",
-            "Writing: specific writing search query",
-            "Speaking: specific speaking search query"
-            
-            RULES:
-            1. Always return EXACTLY 4 queries
-            2. Each query must be in quotation marks and separated by commas
-            3. Each query must start with the category name followed by colon
-            4. Keep queries concise (under 10 words each)
-            5. Do NOT include explanations or additional text
-            6. Make each query UNIQUE and DIFFERENT from standard patterns
-        """.trimIndent()
+        val preferences = preferencesManager.getUserPreferences()
+        
+        val prompt = buildPersonalizedPrompt(preferences, timestamp)
         
         try {
             val messages = listOf(
@@ -111,6 +91,45 @@ class AISearchQueryGenerator {
                 "IELTS ${it.name.lowercase()} practice"
             }
         }
+    }
+    
+    private fun buildPersonalizedPrompt(preferences: UserPreferences, timestamp: Long): String {
+        return """
+            Generate 4 NEW and DIFFERENT search queries for IELTS exam preparation (timestamp: $timestamp).
+            Make these queries UNIQUE and DIFFERENT from previous generations.
+            
+            User Profile:
+            - Weakest skill: ${preferences.weakestSkill}
+            - Target band score: ${preferences.targetBandScore}
+            - Study goal: ${preferences.studyGoal}
+            
+            Focus especially on improving their weakest skill (${preferences.weakestSkill}),
+            while maintaining a balanced preparation approach.
+            Aim queries at achieving their target band score of ${preferences.targetBandScore}.
+            Consider their study goal: ${preferences.studyGoal}
+            
+            Focus on specific sub-topics or aspects for each skill:
+            1. Reading
+            2. Listening
+            3. Writing
+            4. Speaking
+            
+            RESPONSE FORMAT:
+            Return exactly 4 search queries in this format:
+            "Reading: specific reading search query",
+            "Listening: specific listening search query",
+            "Writing: specific writing search query",
+            "Speaking: specific speaking search query"
+            
+            RULES:
+            1. Always return EXACTLY 4 queries
+            2. Each query must be in quotation marks and separated by commas
+            3. Each query must start with the category name followed by colon
+            4. Keep queries concise (under 10 words each)
+            5. Do NOT include explanations or additional text
+            6. Make each query UNIQUE and DIFFERENT from standard patterns
+            7. Make the ${preferences.weakestSkill} query especially targeted and specific
+        """.trimIndent()
     }
     
     /**

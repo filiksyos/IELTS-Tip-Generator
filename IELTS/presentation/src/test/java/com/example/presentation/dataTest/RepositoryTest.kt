@@ -9,7 +9,7 @@ import org.junit.Test
 
 class RepositoryTest {
 
-    private val repository = Repository()
+    private val repository = Repository(preferencesManager = mockk())
 
     @Test
     fun `getDashboardItems returns correct items for valid category`() {

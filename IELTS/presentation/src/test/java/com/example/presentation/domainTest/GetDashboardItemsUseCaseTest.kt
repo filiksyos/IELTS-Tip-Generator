@@ -21,12 +21,12 @@ class GetDashboardItemsUseCaseTest {
 
         // Arrange
         val readingItems = listOf(
-            DashboardItems("uri1", "Reading", "Lesson"),
-            DashboardItems("uri2", "Reading", "Test")
+            DashboardItems("uri1", "Reading", 1),
+            DashboardItems("uri2", "Reading", 2)
         )
         val listeningItems = listOf(
-            DashboardItems("uri3", "Listening", "Lesson"),
-            DashboardItems("uri4", "Listening", "Test")
+            DashboardItems("uri3", "Listening", 1),
+            DashboardItems("uri4", "Listening", 2)
         )
         every { repository.getDashboardItems(DashboardCategory.READING) } returns readingItems
         every { repository.getDashboardItems(DashboardCategory.LISTENING) } returns listeningItems

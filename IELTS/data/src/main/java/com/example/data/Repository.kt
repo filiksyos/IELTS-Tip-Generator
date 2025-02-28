@@ -3,15 +3,18 @@ package com.example.data
 import android.util.Log
 import com.example.data.Utils.YouTubeLink
 import com.example.data.ai.AISearchQueryGenerator
+import com.example.data.preferences.PreferencesManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class Repository : RepositoryInterface {
+class Repository(
+    private val preferencesManager: PreferencesManager
+) : RepositoryInterface {
     private val TAG = "Repository"
-    private val aiSearchQueryGenerator = AISearchQueryGenerator()
+    private val queryGenerator = AISearchQueryGenerator(preferencesManager)
 
     // StateFlow to hold the dashboard items for each category
     private val _dashboardItemsFlow =
@@ -31,7 +34,7 @@ class Repository : RepositoryInterface {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 // Generate queries for all categories
-                val queries = aiSearchQueryGenerator.generateQueriesForAllCategories()
+                val queries = queryGenerator.generateQueriesForAllCategories()
 
                 // Create dashboard items for each category
                 val dashboardItems = queries.mapValues { (category, query) ->
