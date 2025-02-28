@@ -1,17 +1,12 @@
 package com.example.presentation.adapter
 
-import android.net.Uri
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.data.DashboardItems
-import com.bumptech.glide.Glide
-import com.example.presentation.PlaceholderUtils
 import com.example.presentation.databinding.DashboardCardviewItemsBinding
-import com.example.presentation.R
-
 
 class DashboardAdapter(
     private val onItemClick: (DashboardItems) -> Unit
@@ -22,13 +17,8 @@ class DashboardAdapter(
 
         fun bind(item: DashboardItems) {
             binding.apply {
-                Glide.with(binding.root.context)
-                    .load(Uri.parse(item.itemImageUri))
-                    .error(PlaceholderUtils.getPlaceholderForItem(item))
-                    .into(imageViewItemImage)
-
                 tvItemName.text = item.itemText
-                tvLessonOrTest.text = item.cardType
+                tvLessonOrTest.text = item.displayQuery
                 cvItemsMainBackground.setCardBackgroundColor(item.color)
                 root.setOnClickListener { onItemClick(item) }
             }
