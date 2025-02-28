@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.domain.DashboardCategoryType
 import com.example.presentation.adapter.DashboardAdapter
 import com.example.presentation.databinding.FragmentDashboardBinding
-import com.example.presentation.utils.RecyclerViewHelper
 import com.example.presentation.viewModel.DashboardViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -21,11 +20,7 @@ class DashboardFragment : Fragment() {
 
     private lateinit var binding: FragmentDashboardBinding
     private val dashboardViewModel: DashboardViewModel by viewModel()
-
-    private lateinit var readingAdapter: DashboardAdapter
-    private lateinit var listeningAdapter: DashboardAdapter
-    private lateinit var writingAdapter: DashboardAdapter
-    private lateinit var speakingAdapter: DashboardAdapter
+    private lateinit var dashboardAdapter: DashboardAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -38,26 +33,23 @@ class DashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setupAdapters()
-        setupRecyclerViews()
+        setupAdapter()
+        setupRecyclerView()
         setupRefreshButton()
         observeViewModel()
 
         dashboardViewModel.loadDashboardItems()
     }
 
-    private fun setupAdapters() {
-        readingAdapter = DashboardAdapter { item -> navigateToYouTube(item.query) }
-        listeningAdapter = DashboardAdapter { item -> navigateToYouTube(item.query) }
-        writingAdapter = DashboardAdapter { item -> navigateToYouTube(item.query) }
-        speakingAdapter = DashboardAdapter { item -> navigateToYouTube(item.query) }
+    private fun setupAdapter() {
+        dashboardAdapter = DashboardAdapter { item -> navigateToYouTube(item.query) }
     }
 
-    private fun setupRecyclerViews() {
-        RecyclerViewHelper.setupRecyclerView(binding.rvReading, requireContext(), readingAdapter)
-        RecyclerViewHelper.setupRecyclerView(binding.rvListening, requireContext(), listeningAdapter)
-        RecyclerViewHelper.setupRecyclerView(binding.rvWriting, requireContext(), writingAdapter)
-        RecyclerViewHelper.setupRecyclerView(binding.rvSpeaking, requireContext(), speakingAdapter)
+    private fun setupRecyclerView() {
+        binding.rvDashboard.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = dashboardAdapter
+        }
     }
     
     private fun setupRefreshButton() {
@@ -69,11 +61,8 @@ class DashboardFragment : Fragment() {
 
     private fun observeViewModel() {
         dashboardViewModel.dashboardItems.observe(viewLifecycleOwner, Observer { itemsMap ->
-            itemsMap[DashboardCategoryType.READING]?.let { readingAdapter.submitList(it) }
             Log.d("DashboardFragment", "Observed items: $itemsMap")
-            itemsMap[DashboardCategoryType.LISTENING]?.let { listeningAdapter.submitList(it) }
-            itemsMap[DashboardCategoryType.WRITING]?.let { writingAdapter.submitList(it) }
-            itemsMap[DashboardCategoryType.SPEAKING]?.let { speakingAdapter.submitList(it) }
+            dashboardAdapter.submitCategorizedList(itemsMap)
         })
         
         // Observe refreshing state
