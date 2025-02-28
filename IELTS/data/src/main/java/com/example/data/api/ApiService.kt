@@ -18,7 +18,13 @@ object ApiService {
     // You'll need to add your API key to local.properties
     // groq_api_key=your_api_key_here
     private val API_KEY = try {
-        BuildConfig.GROQ_API_KEY
+        BuildConfig.GROQ_API_KEY.also { key ->
+            if (key.isBlank()) {
+                Log.e(TAG, "API key is missing or empty")
+            } else {
+                Log.d(TAG, "API key loaded successfully")
+            }
+        }
     } catch (e: Exception) {
         Log.e(TAG, "Error getting API key from BuildConfig", e)
         "" // Fallback to empty string
@@ -41,6 +47,8 @@ object ApiService {
                 
                 val response = chain.proceed(request)
                 
+                Log.d(TAG, "Response received - Status: ${response.code}")
+                
                 if (!response.isSuccessful) {
                     val errorBody = response.peekBody(Long.MAX_VALUE).string()
                     Log.e(TAG, """
@@ -48,6 +56,7 @@ object ApiService {
                         Code: ${response.code}
                         Message: ${response.message}
                         Body: $errorBody
+                        Request URL: ${original.url}
                     """.trimIndent())
                 }
                 

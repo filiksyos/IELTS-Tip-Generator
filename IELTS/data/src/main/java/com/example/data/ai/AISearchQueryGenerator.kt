@@ -28,8 +28,12 @@ class AISearchQueryGenerator {
      * @return Map of category to search query
      */
     suspend fun generateQueriesForAllCategories(): Map<DashboardCategory, String> = withContext(Dispatchers.IO) {
+        val timestamp = System.currentTimeMillis()
         val prompt = """
-            Generate 4 different search queries for IELTS exam preparation, one for each skill:
+            Generate 4 NEW and DIFFERENT search queries for IELTS exam preparation (timestamp: $timestamp).
+            Make these queries UNIQUE and DIFFERENT from previous generations.
+            Focus on specific sub-topics or aspects for each skill:
+
             1. Reading
             2. Listening
             3. Writing
@@ -50,17 +54,20 @@ class AISearchQueryGenerator {
             3. Each query must start with the category name followed by colon
             4. Keep queries concise (under 10 words each)
             5. Do NOT include explanations or additional text
+            6. Make each query UNIQUE and DIFFERENT from standard patterns
         """.trimIndent()
         
         try {
             val messages = listOf(
-                mapOf("role" to "system", "content" to "You are a helpful IELTS exam preparation assistant."),
+                mapOf("role" to "system", "content" to "You are a creative IELTS exam preparation assistant. Generate unique and varied queries each time."),
                 mapOf("role" to "user", "content" to prompt)
             )
             
             val chatCompletion = ChatCompletion(
                 messages = messages,
-                stream = true  // Change to true for SSE format
+                stream = true,
+                temperature = 0.8,  // Add temperature for more variation
+                maxTokens = 150
             )
             
             Log.d(TAG, "Sending request with completion: $chatCompletion")
