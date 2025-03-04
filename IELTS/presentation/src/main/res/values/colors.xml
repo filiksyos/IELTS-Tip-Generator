@@ -1,5 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Primary Colors (60%) -->
+    <color name="primary">#1A237E</color>
+    <color name="primary_variant">#534BAE</color>
+    <color name="on_primary">#FFFFFF</color>
+
+    <!-- Secondary Colors (30%) -->
+    <color name="secondary">#26A69A</color>
+    <color name="secondary_variant">#00766C</color>
+    <color name="on_secondary">#FFFFFF</color>
+
+    <!-- Accent Colors (10%) -->
+    <color name="accent">#FF6E40</color>
+    <color name="on_accent">#FFFFFF</color>
+
+    <!-- Background Colors -->
+    <color name="background">#FAFAFA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_background">#000000</color>
+    <color name="on_surface">#000000</color>
+
+    <!-- Status Colors -->
+    <color name="error">#B00020</color>
+    <color name="on_error">#FFFFFF</color>
+    <color name="success">#4CAF50</color>
+    <color name="on_success">#FFFFFF</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#9E9E9E</color>
+
+    <!-- Divider -->
+    <color name="divider">#E0E0E0</color>
+
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>

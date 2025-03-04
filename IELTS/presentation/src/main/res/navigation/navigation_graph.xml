@@ -8,28 +8,31 @@
     <fragment
         android:id="@+id/onboardingFragment"
         android:name="com.example.presentation.onboarding.OnboardingFragment"
-        android:label="fragment_onboarding"
+        android:label="OnboardingFragment"
         tools:layout="@layout/fragment_onboarding">
         <action
-            android:id="@+id/action_onboardingFragment_to_dashboardFragment"
-            app:destination="@id/dashboardFragment"
+            android:id="@+id/action_onboardingFragment_to_main"
+            app:destination="@id/main_navigation"
             app:popUpTo="@id/onboardingFragment"
             app:popUpToInclusive="true" />
     </fragment>
 
-    <fragment
-        android:id="@+id/dashboardFragment"
-        android:name="com.example.presentation.Fragment.DashboardFragment"
-        android:label="fragment_dashboard"
-        tools:layout="@layout/fragment_dashboard">
-        <action
-            android:id="@+id/action_dashboardFragment_to_settingsFragment"
-            app:destination="@id/settingsFragment" />
-    </fragment>
+    <navigation android:id="@+id/main_navigation"
+        app:startDestination="@id/navigation_home">
+        <fragment
+            android:id="@+id/navigation_home"
+            android:name="com.example.presentation.Fragment.DashboardFragment"
+            android:label="DashboardFragment"
+            tools:layout="@layout/fragment_dashboard">
+            <action
+                android:id="@+id/action_dashboardFragment_to_settingsFragment"
+                app:destination="@id/navigation_settings" />
+        </fragment>
 
-    <fragment
-        android:id="@+id/settingsFragment"
-        android:name="com.example.presentation.settings.SettingsFragment"
-        android:label="fragment_settings"
-        tools:layout="@layout/fragment_settings" />
+        <fragment
+            android:id="@+id/navigation_settings"
+            android:name="com.example.presentation.settings.SettingsFragment"
+            android:label="SettingsFragment"
+            tools:layout="@layout/fragment_settings" />
+    </navigation>
 </navigation>

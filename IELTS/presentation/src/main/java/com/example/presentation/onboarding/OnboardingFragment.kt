@@ -4,23 +4,29 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.example.data.models.IELTSSkill
 import com.example.data.models.UserPreferences
 import com.example.presentation.R
 import com.example.presentation.viewModel.OnboardingViewModel
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.slider.Slider
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class OnboardingFragment : Fragment() {
     private val viewModel: OnboardingViewModel by viewModel()
     
-    private lateinit var weakestSkillSpinner: Spinner
-    private lateinit var targetScoreSeekBar: SeekBar
-    private lateinit var targetScoreValue: TextView
-    private lateinit var studyGoalInput: EditText
-    private lateinit var getStartedButton: Button
+    private lateinit var weakestSkillLayout: TextInputLayout
+    private lateinit var weakestSkillDropdown: AutoCompleteTextView
+    private lateinit var targetScoreSlider: Slider
+    private lateinit var studyGoalLayout: TextInputLayout
+    private lateinit var studyGoalInput: TextInputEditText
+    private lateinit var getStartedButton: MaterialButton
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -34,53 +40,49 @@ class OnboardingFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         
         setupViews(view)
-        setupSpinner()
-        setupSeekBar()
+        setupDropdown()
+        setupSlider()
         setupButton()
     }
 
     private fun setupViews(view: View) {
-        weakestSkillSpinner = view.findViewById(R.id.weakestSkillSpinner)
-        targetScoreSeekBar = view.findViewById(R.id.targetScoreSeekBar)
-        targetScoreValue = view.findViewById(R.id.targetScoreValue)
+        weakestSkillLayout = view.findViewById(R.id.weakestSkillLayout)
+        weakestSkillDropdown = view.findViewById(R.id.weakestSkillDropdown)
+        targetScoreSlider = view.findViewById(R.id.targetScoreSlider)
+        studyGoalLayout = view.findViewById(R.id.studyGoalLayout)
         studyGoalInput = view.findViewById(R.id.studyGoalInput)
         getStartedButton = view.findViewById(R.id.getStartedButton)
     }
 
-    private fun setupSpinner() {
+    private fun setupDropdown() {
         val skills = IELTSSkill.values().map { it.name }
         val adapter = ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_spinner_item,
+            android.R.layout.simple_dropdown_item_1line,
             skills
         )
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        weakestSkillSpinner.adapter = adapter
+        weakestSkillDropdown.setAdapter(adapter)
     }
 
-    private fun setupSeekBar() {
-        targetScoreSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val score = (progress / 2f) + 4 // Convert to IELTS score range (4.0-9.0)
-                targetScoreValue.text = String.format("%.1f", score)
+    private fun setupSlider() {
+        targetScoreSlider.addOnChangeListener { _, value, fromUser ->
+            if (fromUser) {
+                // Handle slider value change
             }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
+        }
     }
 
     private fun setupButton() {
         getStartedButton.setOnClickListener {
             val preferences = UserPreferences(
-                weakestSkill = weakestSkillSpinner.selectedItem.toString(),
-                targetBandScore = targetScoreValue.text.toString().toFloat(),
+                weakestSkill = weakestSkillDropdown.text.toString(),
+                targetBandScore = targetScoreSlider.value,
                 studyGoal = studyGoalInput.text.toString(),
                 isFirstTime = false
             )
             
             viewModel.savePreferences(preferences)
-            findNavController().navigate(R.id.action_onboardingFragment_to_dashboardFragment)
+            findNavController().navigate(R.id.action_onboardingFragment_to_main)
         }
     }
 } 
