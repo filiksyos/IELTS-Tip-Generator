@@ -1,11 +1,12 @@
 import os
 import sys
-import asyncio
 import logging
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram.error import NetworkError
+from models import ChatCompletion
+from api_service import APIService
 
 # Enable logging
 logging.basicConfig(
@@ -16,6 +17,9 @@ logging.basicConfig(
 # Load environment variables
 load_dotenv()
 
+# Initialize API service
+api_service = APIService()
+
 # Command handlers
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a message when the command /start is issued."""
@@ -23,7 +27,30 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle the /search command"""
-    await update.message.reply_text('searched')
+    # Get the query text after /search
+    query = ' '.join(context.args)
+    if not query:
+        await update.message.reply_text('Please provide a question after /search')
+        return
+
+    try:
+        # Create chat completion request
+        chat_completion = ChatCompletion(
+            messages=[
+                {"role": "user", "content": query}
+            ]
+        )
+        
+        # Get response from AI
+        response = await api_service.get_chat_completion(chat_completion)
+        
+        # Extract and send the response
+        ai_response = response.choices[0].message.content if response.choices else "No response generated"
+        await update.message.reply_text(ai_response)
+        
+    except Exception as e:
+        logging.error(f"Error in search command: {e}")
+        await update.message.reply_text("Sorry, I encountered an error processing your request.")
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle errors caused by updates."""
