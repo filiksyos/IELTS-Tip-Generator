@@ -72,7 +72,8 @@ class Repository(
                 cardType = query,
                 color = category.color,
                 query = youtubeLink,
-                displayQuery = query
+                displayQuery = query,
+                itemImageUri = category.iconUri
             )
         )
     }
@@ -99,7 +100,8 @@ class Repository(
                 cardType = "Lesson",
                 color = category.color,
                 query = YouTubeLink.getLink("${category.title} IELTS Lesson"),
-                displayQuery = "${category.title} IELTS Lesson"
+                displayQuery = "${category.title} IELTS Lesson",
+                itemImageUri = category.iconUri
             )
         )
     }

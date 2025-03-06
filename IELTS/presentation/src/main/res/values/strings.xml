@@ -12,4 +12,6 @@
         <item>Speaking</item>
     </string-array>
 
+    <string name="category_icon">Category Icon</string>
+
 </resources>
