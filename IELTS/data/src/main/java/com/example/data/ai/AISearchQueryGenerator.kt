@@ -25,7 +25,7 @@ class AISearchQueryGenerator(
     private val json = Json { 
         ignoreUnknownKeys = true 
         encodeDefaults = true
-        isLenient = true  // Add this for more forgiving parsing
+        isLenient = true
     }
     
     /**
@@ -40,15 +40,15 @@ class AISearchQueryGenerator(
         
         try {
             val messages = listOf(
-                mapOf("role" to "system", "content" to "You are a creative IELTS exam preparation assistant. Generate unique and varied tips with search queries each time."),
+                mapOf("role" to "system", "content" to "You are a knowledgeable IELTS exam preparation assistant. Generate unique and detailed explanations for IELTS tips."),
                 mapOf("role" to "user", "content" to prompt)
             )
             
             val chatCompletion = ChatCompletion(
                 messages = messages,
                 stream = true,
-                temperature = 0.8,  // Add temperature for more variation
-                maxTokens = 200
+                temperature = 0.8,
+                maxTokens = 400  // Increased for longer explanations
             )
             
             Log.d(TAG, "Sending request with completion: $chatCompletion")
@@ -56,17 +56,14 @@ class AISearchQueryGenerator(
             val responseText = response.byteStream().bufferedReader().use { it.readText() }
             Log.d(TAG, "Raw API Response: $responseText")
             
-            // Extract the content from the response
             val content = extractContentFromResponse(responseText)
             Log.d(TAG, "Extracted content: $content")
             
-            // Parse the queries
-            val tipQueryPairs = parseQueries(content)
-            Log.d(TAG, "Parsed tip-query pairs: $tipQueryPairs")
+            val tipExplanationPairs = parseContent(content)
+            Log.d(TAG, "Parsed tip-explanation pairs: $tipExplanationPairs")
             
-            // Map queries to categories
             val result = mutableMapOf<DashboardCategory, IELTSContent>()
-            for ((categoryName, content) in tipQueryPairs) {
+            for ((categoryName, content) in tipExplanationPairs) {
                 val category = when (categoryName.lowercase()) {
                     "reading" -> DashboardCategory.READING
                     "listening" -> DashboardCategory.LISTENING
@@ -77,24 +74,22 @@ class AISearchQueryGenerator(
                 result[category] = content
             }
             
-            // If any category is missing, provide a default content
             for (category in DashboardCategory.values()) {
                 if (!result.containsKey(category)) {
                     result[category] = IELTSContent(
                         tip = "Practice ${category.name.lowercase()} with official IELTS materials",
-                        searchQuery = "IELTS ${category.name.lowercase()} practice"
+                        explanation = "Focus on official IELTS ${category.name.lowercase()} practice materials to familiarize yourself with the exam format and requirements."
                     )
                 }
             }
             
             result
         } catch (e: Exception) {
-            Log.e(TAG, "Error generating queries", e)
-            // Provide default content in case of error
+            Log.e(TAG, "Error generating content", e)
             DashboardCategory.values().associateWith { category ->
                 IELTSContent(
                     tip = "Practice ${category.name.lowercase()} with official IELTS materials",
-                    searchQuery = "IELTS ${category.name.lowercase()} practice"
+                    explanation = "Focus on official IELTS ${category.name.lowercase()} practice materials to familiarize yourself with the exam format and requirements."
                 )
             }
         }
@@ -102,8 +97,8 @@ class AISearchQueryGenerator(
     
     private fun buildPersonalizedPrompt(preferences: UserPreferences, timestamp: Long): String {
         return """
-            Generate 4 NEW and DIFFERENT IELTS study tips with corresponding search queries (timestamp: $timestamp).
-            Each tip should be concise and actionable, with a related search query for more details.
+            Generate 4 NEW and DIFFERENT IELTS study tips with detailed explanations (timestamp: $timestamp).
+            Each tip should be concise and actionable, with a detailed explanation of how to implement it.
             
             User Profile:
             - Weakest skill: ${preferences.weakestSkill}
@@ -118,18 +113,18 @@ class AISearchQueryGenerator(
             
             RESPONSE FORMAT:
             Return exactly 4 pairs in this format:
-            "Reading: {tip} || {search query}",
-            "Listening: {tip} || {search query}",
-            "Writing: {tip} || {search query}",
-            "Speaking: {tip} || {search query}"
+            "Reading: {tip} || {detailed explanation}",
+            "Listening: {tip} || {detailed explanation}",
+            "Writing: {tip} || {detailed explanation}",
+            "Speaking: {tip} || {detailed explanation}"
             
             RULES:
             1. Always return EXACTLY 4 pairs
             2. Each pair must be in quotation marks and separated by commas
             3. Each pair must start with the category name followed by colon
             4. Tips should be 10-15 words
-            5. Search queries should be 3-5 words
-            6. Use || to separate tip and search query
+            5. Explanations should be 50-100 words and provide actionable guidance
+            6. Use || to separate tip and explanation
             7. Make the ${preferences.weakestSkill} tip especially targeted and specific
         """.trimIndent()
     }
@@ -140,11 +135,10 @@ class AISearchQueryGenerator(
     private fun extractContentFromResponse(response: String): String {
         return try {
             Log.d(TAG, "Starting content extraction from response")
-            // The response is a series of SSE events, we need to parse them
             val dataLines = response.split("\n")
                 .filter { it.startsWith("data: ") && it != "data: [DONE]" }
                 .map { it.substring(6) }
-                .filterNot { it.isBlank() }  // Skip empty lines
+                .filterNot { it.isBlank() }
             
             Log.d(TAG, "Found ${dataLines.size} data lines")
             
@@ -152,22 +146,17 @@ class AISearchQueryGenerator(
             for (dataLine in dataLines) {
                 try {
                     Log.d(TAG, "Processing data line: $dataLine")
-                    // Use explicit serializer instead of type inference
                     val chatResponse = json.decodeFromString(ChatResponse.serializer(), dataLine)
-                    
-                    // Handle both streaming and non-streaming responses
                     when {
-                        // Streaming response
                         chatResponse.choices.firstOrNull()?.delta?.content != null -> {
                             val deltaContent = chatResponse.choices.first().delta?.content
                             Log.d(TAG, "Found delta content: $deltaContent")
-                            content.append(deltaContent)
+                            content.append(deltaContent ?: "")
                         }
-                        // Non-streaming response
                         chatResponse.choices.firstOrNull()?.message?.content != null -> {
                             val messageContent = chatResponse.choices.first().message?.content
                             Log.d(TAG, "Found message content: $messageContent")
-                            content.append(messageContent)
+                            content.append(messageContent ?: "")
                         }
                         else -> {
                             Log.w(TAG, "No content found in response choice")
@@ -175,7 +164,6 @@ class AISearchQueryGenerator(
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error parsing SSE data: $dataLine", e)
-                    Log.e(TAG, "Parse error details:", e)
                 }
             }
             
@@ -198,19 +186,18 @@ class AISearchQueryGenerator(
      * Parses the queries from the response
      * @return Map of category name to query
      */
-    private fun parseQueries(response: String): Map<String, IELTSContent> {
+    private fun parseContent(response: String): Map<String, IELTSContent> {
         val result = mutableMapOf<String, IELTSContent>()
         
-        // Pattern to match category and query
         val pattern = Pattern.compile(""""(Reading|Listening|Writing|Speaking):\s*([^|]+)\|\|\s*([^"]+)"""", Pattern.CASE_INSENSITIVE)
         val matcher = pattern.matcher(response)
         
         while (matcher.find()) {
             val category = matcher.group(1)
             val tip = matcher.group(2)
-            val query = matcher.group(3)
-            if (category != null && tip != null && query != null) {
-                result[category] = IELTSContent(tip.trim(), query.trim())
+            val explanation = matcher.group(3)
+            if (category != null && tip != null && explanation != null) {
+                result[category] = IELTSContent(tip.trim(), explanation.trim())
             }
         }
         

@@ -1,7 +1,5 @@
 package com.example.presentation.Fragment
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -68,7 +66,7 @@ class DashboardFragment : Fragment() {
     }
 
     private fun setupAdapter() {
-        dashboardAdapter = DashboardAdapter { item -> navigateToYouTube(item.query) }
+        dashboardAdapter = DashboardAdapter { item -> showExplanation(item.displayTip, item.explanation) }
     }
 
     private fun setupRecyclerView() {
@@ -91,15 +89,14 @@ class DashboardFragment : Fragment() {
             dashboardAdapter.submitCategorizedList(itemsMap)
         })
         
-        // Observe refreshing state
         dashboardViewModel.isRefreshing.observe(viewLifecycleOwner, Observer { isRefreshing ->
             binding.refreshProgressBar.visibility = if (isRefreshing) View.VISIBLE else View.GONE
             binding.refreshButton.visibility = if (isRefreshing) View.INVISIBLE else View.VISIBLE
         })
     }
 
-    private fun navigateToYouTube(query: String) {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(query))
-        startActivity(intent)
+    private fun showExplanation(tip: String, explanation: String) {
+        ExplanationBottomSheetFragment.newInstance(tip, explanation)
+            .show(childFragmentManager, "explanation")
     }
 }

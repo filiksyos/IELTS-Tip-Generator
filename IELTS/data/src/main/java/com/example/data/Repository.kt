@@ -1,7 +1,6 @@
 package com.example.data
 
 import android.util.Log
-import com.example.data.Utils.YouTubeLink
 import com.example.data.ai.AISearchQueryGenerator
 import com.example.data.models.IELTSContent
 import com.example.data.preferences.PreferencesManager
@@ -62,13 +61,12 @@ class Repository(
         category: DashboardCategory,
         ieltsContent: IELTSContent
     ): List<DashboardItems> {
-        val youtubeLink = YouTubeLink.getLink(ieltsContent.searchQuery)
         return listOf(
             DashboardItems(
                 itemText = category.title,
                 cardType = "Tip",
                 color = category.color,
-                query = youtubeLink,
+                explanation = ieltsContent.explanation,
                 displayTip = ieltsContent.tip
             )
         )
@@ -91,7 +89,7 @@ class Repository(
                 itemText = category.title,
                 cardType = "Tip",
                 color = category.color,
-                query = YouTubeLink.getLink("IELTS ${category.title} practice"),
+                explanation = "Focus on official IELTS ${category.title.lowercase()} practice materials to familiarize yourself with the exam format and requirements.",
                 displayTip = "Practice ${category.title.lowercase()} with official IELTS materials"
             )
         )
