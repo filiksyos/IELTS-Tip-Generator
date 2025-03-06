@@ -3,6 +3,7 @@ package com.example.data
 import android.util.Log
 import com.example.data.Utils.YouTubeLink
 import com.example.data.ai.AISearchQueryGenerator
+import com.example.data.models.IELTSContent
 import com.example.data.preferences.PreferencesManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,24 +34,20 @@ class Repository(
     override fun refreshQueries() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Generate queries for all categories
-                val queries = queryGenerator.generateQueriesForAllCategories()
+                val content = queryGenerator.generateQueriesForAllCategories()
 
-                // Create dashboard items for each category
-                val dashboardItems = queries.mapValues { (category, query) ->
-                    createDashboardItemsForCategory(category, query)
+                val dashboardItems = content.mapValues { (category, ieltsContent) ->
+                    createDashboardItemsForCategory(category, ieltsContent)
                 }
 
-                // Update the StateFlow
                 _dashboardItemsFlow.value = dashboardItems
 
-                Log.d(TAG, "Successfully refreshed queries: $queries")
+                Log.d(TAG, "Successfully refreshed content: $content")
             } catch (e: Exception) {
-                Log.e(TAG, "Error refreshing queries", e)
+                Log.e(TAG, "Error refreshing content", e)
 
-                // Fallback to default items if there's an error
                 val defaultItems = DashboardCategory.values().associateWith { category ->
-                    createDashboardItemsForCategory(category, "${category.title} practice")
+                    createDefaultDashboardItems(category)
                 }
 
                 _dashboardItemsFlow.value = defaultItems
@@ -63,16 +60,16 @@ class Repository(
      */
     private fun createDashboardItemsForCategory(
         category: DashboardCategory,
-        query: String
+        ieltsContent: IELTSContent
     ): List<DashboardItems> {
-        val youtubeLink = YouTubeLink.getLink(query)
+        val youtubeLink = YouTubeLink.getLink(ieltsContent.searchQuery)
         return listOf(
             DashboardItems(
                 itemText = category.title,
-                cardType = query,
+                cardType = "Tip",
                 color = category.color,
                 query = youtubeLink,
-                displayQuery = query
+                displayTip = ieltsContent.tip
             )
         )
     }
@@ -82,24 +79,20 @@ class Repository(
      * This method is used by the existing code
      */
     override fun getDashboardItems(category: DashboardCategory): List<DashboardItems> {
-        // Get items from the StateFlow if available
-        val items = _dashboardItemsFlow.value[category]
-
-        // Return items if available, otherwise return fallback items
-        return items ?: fallbackDashboardItems(category)
+        return _dashboardItemsFlow.value[category] ?: createDefaultDashboardItems(category)
     }
 
     /**
      * Fallback method to create dashboard items if AI generation fails
      */
-    private fun fallbackDashboardItems(category: DashboardCategory): List<DashboardItems> {
+    private fun createDefaultDashboardItems(category: DashboardCategory): List<DashboardItems> {
         return listOf(
             DashboardItems(
                 itemText = category.title,
-                cardType = "Lesson",
+                cardType = "Tip",
                 color = category.color,
-                query = YouTubeLink.getLink("${category.title} IELTS Lesson"),
-                displayQuery = "${category.title} IELTS Lesson"
+                query = YouTubeLink.getLink("IELTS ${category.title} practice"),
+                displayTip = "Practice ${category.title.lowercase()} with official IELTS materials"
             )
         )
     }

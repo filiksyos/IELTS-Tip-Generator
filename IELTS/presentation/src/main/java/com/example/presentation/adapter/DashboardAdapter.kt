@@ -26,7 +26,7 @@ class DashboardAdapter(
         fun bind(item: DashboardListItem.Item) {
             binding.apply {
                 cardTitle.text = item.dashboardItem.itemText
-                cardDescription.text = item.dashboardItem.displayQuery
+                cardDescription.text = item.dashboardItem.displayTip
                 root.setCardBackgroundColor(item.dashboardItem.color)
                 root.setOnClickListener { onItemClick(item.dashboardItem) }
             }

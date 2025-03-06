@@ -6,6 +6,7 @@ import com.example.data.api.ApiService
 import com.example.data.api.ChatApi
 import com.example.data.models.ChatCompletion
 import com.example.data.models.ChatResponse
+import com.example.data.models.IELTSContent
 import com.example.data.models.UserPreferences
 import com.example.data.preferences.PreferencesManager
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +32,7 @@ class AISearchQueryGenerator(
      * Generates search queries for all IELTS categories
      * @return Map of category to search query
      */
-    suspend fun generateQueriesForAllCategories(): Map<DashboardCategory, String> = withContext(Dispatchers.IO) {
+    suspend fun generateQueriesForAllCategories(): Map<DashboardCategory, IELTSContent> = withContext(Dispatchers.IO) {
         val timestamp = System.currentTimeMillis()
         val preferences = preferencesManager.getUserPreferences()
         
@@ -39,7 +40,7 @@ class AISearchQueryGenerator(
         
         try {
             val messages = listOf(
-                mapOf("role" to "system", "content" to "You are a creative IELTS exam preparation assistant. Generate unique and varied queries each time."),
+                mapOf("role" to "system", "content" to "You are a creative IELTS exam preparation assistant. Generate unique and varied tips with search queries each time."),
                 mapOf("role" to "user", "content" to prompt)
             )
             
@@ -47,7 +48,7 @@ class AISearchQueryGenerator(
                 messages = messages,
                 stream = true,
                 temperature = 0.8,  // Add temperature for more variation
-                maxTokens = 150
+                maxTokens = 200
             )
             
             Log.d(TAG, "Sending request with completion: $chatCompletion")
@@ -60,12 +61,12 @@ class AISearchQueryGenerator(
             Log.d(TAG, "Extracted content: $content")
             
             // Parse the queries
-            val queries = parseQueries(content)
-            Log.d(TAG, "Parsed queries: $queries")
+            val tipQueryPairs = parseQueries(content)
+            Log.d(TAG, "Parsed tip-query pairs: $tipQueryPairs")
             
             // Map queries to categories
-            val result = mutableMapOf<DashboardCategory, String>()
-            for ((categoryName, query) in queries) {
+            val result = mutableMapOf<DashboardCategory, IELTSContent>()
+            for ((categoryName, content) in tipQueryPairs) {
                 val category = when (categoryName.lowercase()) {
                     "reading" -> DashboardCategory.READING
                     "listening" -> DashboardCategory.LISTENING
@@ -73,62 +74,63 @@ class AISearchQueryGenerator(
                     "speaking" -> DashboardCategory.SPEAKING
                     else -> continue
                 }
-                result[category] = query
+                result[category] = content
             }
             
-            // If any category is missing, provide a default query
+            // If any category is missing, provide a default content
             for (category in DashboardCategory.values()) {
                 if (!result.containsKey(category)) {
-                    result[category] = "IELTS ${category.name.lowercase()} practice"
+                    result[category] = IELTSContent(
+                        tip = "Practice ${category.name.lowercase()} with official IELTS materials",
+                        searchQuery = "IELTS ${category.name.lowercase()} practice"
+                    )
                 }
             }
             
             result
         } catch (e: Exception) {
             Log.e(TAG, "Error generating queries", e)
-            // Provide default queries in case of error
-            DashboardCategory.values().associateWith { 
-                "IELTS ${it.name.lowercase()} practice"
+            // Provide default content in case of error
+            DashboardCategory.values().associateWith { category ->
+                IELTSContent(
+                    tip = "Practice ${category.name.lowercase()} with official IELTS materials",
+                    searchQuery = "IELTS ${category.name.lowercase()} practice"
+                )
             }
         }
     }
     
     private fun buildPersonalizedPrompt(preferences: UserPreferences, timestamp: Long): String {
         return """
-            Generate 4 NEW and DIFFERENT search queries for IELTS exam preparation (timestamp: $timestamp).
-            Make these queries UNIQUE and DIFFERENT from previous generations.
+            Generate 4 NEW and DIFFERENT IELTS study tips with corresponding search queries (timestamp: $timestamp).
+            Each tip should be concise and actionable, with a related search query for more details.
             
             User Profile:
             - Weakest skill: ${preferences.weakestSkill}
             - Target band score: ${preferences.targetBandScore}
             - Study goal: ${preferences.studyGoal}
             
-            Focus especially on improving their weakest skill (${preferences.weakestSkill}),
-            while maintaining a balanced preparation approach.
-            Aim queries at achieving their target band score of ${preferences.targetBandScore}.
-            Consider their study goal: ${preferences.studyGoal}
-            
-            Focus on specific sub-topics or aspects for each skill:
+            Focus on these skills:
             1. Reading
             2. Listening
             3. Writing
             4. Speaking
             
             RESPONSE FORMAT:
-            Return exactly 4 search queries in this format:
-            "Reading: specific reading search query",
-            "Listening: specific listening search query",
-            "Writing: specific writing search query",
-            "Speaking: specific speaking search query"
+            Return exactly 4 pairs in this format:
+            "Reading: {tip} || {search query}",
+            "Listening: {tip} || {search query}",
+            "Writing: {tip} || {search query}",
+            "Speaking: {tip} || {search query}"
             
             RULES:
-            1. Always return EXACTLY 4 queries
-            2. Each query must be in quotation marks and separated by commas
-            3. Each query must start with the category name followed by colon
-            4. Keep queries concise (under 10 words each)
-            5. Do NOT include explanations or additional text
-            6. Make each query UNIQUE and DIFFERENT from standard patterns
-            7. Make the ${preferences.weakestSkill} query especially targeted and specific
+            1. Always return EXACTLY 4 pairs
+            2. Each pair must be in quotation marks and separated by commas
+            3. Each pair must start with the category name followed by colon
+            4. Tips should be 10-15 words
+            5. Search queries should be 3-5 words
+            6. Use || to separate tip and search query
+            7. Make the ${preferences.weakestSkill} tip especially targeted and specific
         """.trimIndent()
     }
     
@@ -196,18 +198,19 @@ class AISearchQueryGenerator(
      * Parses the queries from the response
      * @return Map of category name to query
      */
-    private fun parseQueries(response: String): Map<String, String> {
-        val result = mutableMapOf<String, String>()
+    private fun parseQueries(response: String): Map<String, IELTSContent> {
+        val result = mutableMapOf<String, IELTSContent>()
         
         // Pattern to match category and query
-        val pattern = Pattern.compile(""""(Reading|Listening|Writing|Speaking):\s*([^"]+)"""", Pattern.CASE_INSENSITIVE)
+        val pattern = Pattern.compile(""""(Reading|Listening|Writing|Speaking):\s*([^|]+)\|\|\s*([^"]+)"""", Pattern.CASE_INSENSITIVE)
         val matcher = pattern.matcher(response)
         
         while (matcher.find()) {
             val category = matcher.group(1)
-            val query = matcher.group(2)
-            if (category != null && query != null) {
-                result[category] = query.trim()
+            val tip = matcher.group(2)
+            val query = matcher.group(3)
+            if (category != null && tip != null && query != null) {
+                result[category] = IELTSContent(tip.trim(), query.trim())
             }
         }
         

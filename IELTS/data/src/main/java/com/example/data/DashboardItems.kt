@@ -8,5 +8,6 @@ data class DashboardItems(
     val cardType: String? = null,
     val color: Int = Color.GRAY,
     val query: String = BASE_URL,
-    val displayQuery: String = query
+    val displayQuery: String = query,
+    val displayTip: String = itemText ?: ""
 )
