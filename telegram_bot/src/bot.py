@@ -7,6 +7,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram.error import NetworkError
 from models import ChatCompletion
 from api_service import APIService
+from youtube_link import YouTubeLink
 
 # Enable logging
 logging.basicConfig(
@@ -20,10 +21,26 @@ load_dotenv()
 # Initialize API service
 api_service = APIService()
 
+def build_prompt(user_query: str) -> str:
+    """Build a prompt for generating a YouTube search query."""
+    return f"""Generate a concise and specific YouTube search query for the following IELTS-related problem:
+Problem: {user_query}
+
+RULES:
+1. Respond ONLY with the search query
+2. Keep it under 10 words
+3. Focus on IELTS-specific content
+4. Include "IELTS" in the query
+5. Make it specific to the user's problem
+6. DO NOT include any explanations or additional text
+
+Example format:
+IELTS writing task 2 time management tips"""
+
 # Command handlers
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a message when the command /start is issued."""
-    await update.message.reply_text('Hi! I am your IELTS search bot. Use /search followed by your question.')
+    await update.message.reply_text('Hi! I am your IELTS search bot. Use /search followed by your question to get relevant YouTube resources.')
 
 async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle the /search command"""
@@ -34,19 +51,29 @@ async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        # Create chat completion request
+        # Create chat completion request with system message and user query
         chat_completion = ChatCompletion(
             messages=[
-                {"role": "user", "content": query}
+                {
+                    "role": "system",
+                    "content": "You are an IELTS YouTube search query generator. Generate only the search query, nothing else."
+                },
+                {
+                    "role": "user",
+                    "content": build_prompt(query)
+                }
             ]
         )
         
         # Get response from AI
         response = await api_service.get_chat_completion(chat_completion)
         
-        # Extract and send the response
-        ai_response = response.choices[0].message.content if response.choices else "No response generated"
-        await update.message.reply_text(ai_response)
+        # Extract the search query and generate YouTube link
+        search_query = response.choices[0].message.content.strip()
+        youtube_link = YouTubeLink.get_link(search_query)
+        
+        # Send the YouTube link
+        await update.message.reply_text(youtube_link)
         
     except Exception as e:
         logging.error(f"Error in search command: {e}")

@@ -6,8 +6,8 @@ class ChatCompletion:
     messages: List[Dict[str, str]]
     model: str = "mixtral-8x7b-32768"
     stream: bool = False
-    temperature: float = 0.2
-    max_tokens: int = 150
+    temperature: float = 0.7
+    max_tokens: int = 50
 
 @dataclass
 class Message:
