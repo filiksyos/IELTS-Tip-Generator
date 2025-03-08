@@ -3,6 +3,7 @@ package com.example.data.ai
 import android.util.Log
 import com.example.data.DashboardCategory
 import com.example.data.api.ApiService
+import com.example.data.api.provider.APIProviderFactory
 import com.example.data.models.ChatCompletion
 import com.example.data.models.ChatResponse
 import com.example.data.models.IELTSContent
@@ -51,7 +52,11 @@ class AISearchQueryGenerator(
             )
             
             Log.d(TAG, "Sending request with completion: $chatCompletion")
-            val response = ApiService.getChatCompletion(chatCompletion)
+            // Use Mistral provider for IELTS tip generation
+            val response = ApiService.getChatCompletion(
+                chatCompletion,
+                APIProviderFactory.ProviderType.MISTRAL
+            )
             val responseText = response.byteStream().bufferedReader().use { it.readText() }
             Log.d(TAG, "Raw API Response: $responseText")
             

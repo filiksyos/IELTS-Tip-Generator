@@ -8,8 +8,10 @@ object APIProviderFactory {
      * Available API provider types
      */
     enum class ProviderType {
-        GROQ
-        // Add more providers here as needed (e.g., OPENAI, OPENROUTER, etc.)
+        GROQ,
+        OPENROUTER,
+        MISTRAL
+        // Add more providers here as needed (e.g., OPENAI, etc.)
     }
     
     /**
@@ -20,6 +22,8 @@ object APIProviderFactory {
     fun getProvider(type: ProviderType = ProviderType.GROQ): APIProvider {
         return when (type) {
             ProviderType.GROQ -> GroqProvider()
+            ProviderType.OPENROUTER -> OpenRouterProvider()
+            ProviderType.MISTRAL -> MistralProvider()
             // Add more cases here as more providers are added
         }
     }
