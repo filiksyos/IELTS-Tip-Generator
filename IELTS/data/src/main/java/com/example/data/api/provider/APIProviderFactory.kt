@@ -10,7 +10,8 @@ object APIProviderFactory {
     enum class ProviderType {
         GROQ,
         OPENROUTER,
-        MISTRAL
+        MISTRAL,
+        NEW_GROQ
         // Add more providers here as needed (e.g., OPENAI, etc.)
     }
     
@@ -24,6 +25,7 @@ object APIProviderFactory {
             ProviderType.GROQ -> GroqProvider()
             ProviderType.OPENROUTER -> OpenRouterProvider()
             ProviderType.MISTRAL -> MistralProvider()
+            ProviderType.NEW_GROQ -> NewGroqProvider()
             // Add more cases here as more providers are added
         }
     }

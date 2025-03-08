@@ -18,6 +18,7 @@ android {
         buildConfigField "String", "GROQ_API_KEY", getGroqApiKey()
         buildConfigField "String", "OPENROUTER_API_KEY", getOpenRouterApiKey()
         buildConfigField "String", "MISTRAL_API_KEY", getMistralApiKey()
+        buildConfigField "String", "NEW_GROQ_API_KEY", getNewGroqApiKey()
     }
 
     buildTypes {
@@ -66,6 +67,11 @@ def getOpenRouterApiKey() {
 // Function to get Mistral API key
 def getMistralApiKey() {
     return getApiKey('mistral_api_key')
+}
+
+// Function to get New Groq API key
+def getNewGroqApiKey() {
+    return getApiKey('new_groq_api_key')
 }
 
 dependencies {

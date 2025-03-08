@@ -52,10 +52,10 @@ class AISearchQueryGenerator(
             )
             
             Log.d(TAG, "Sending request with completion: $chatCompletion")
-            // Use Mistral provider for IELTS tip generation
+            // Use NewGroq provider for IELTS tip generation
             val response = ApiService.getChatCompletion(
                 chatCompletion,
-                APIProviderFactory.ProviderType.MISTRAL
+                APIProviderFactory.ProviderType.NEW_GROQ
             )
             val responseText = response.byteStream().bufferedReader().use { it.readText() }
             Log.d(TAG, "Raw API Response: $responseText")
