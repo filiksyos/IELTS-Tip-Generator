@@ -10,6 +10,8 @@ import com.example.data.models.IELTSContent
 import com.example.data.models.UserPreferences
 import com.example.data.preferences.PreferencesManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
@@ -17,6 +19,7 @@ import java.util.regex.Pattern
 
 /**
  * Generates search queries for IELTS categories using AI
+ * Each category uses a different API provider for specialized responses
  */
 class AISearchQueryGenerator(
     private val preferencesManager: PreferencesManager
@@ -29,18 +32,87 @@ class AISearchQueryGenerator(
     }
     
     /**
-     * Generates search queries for all IELTS categories
+     * Generates search queries for all IELTS categories using different API providers in parallel
+     * - Reading: Groq
+     * - Listening: OpenRouter
+     * - Writing: Mistral
+     * - Speaking: New Groq
      * @return Map of category to search query
      */
     suspend fun generateQueriesForAllCategories(): Map<DashboardCategory, IELTSContent> = withContext(Dispatchers.IO) {
         val timestamp = System.currentTimeMillis()
         val preferences = preferencesManager.getUserPreferences()
         
-        val prompt = buildPersonalizedPrompt(preferences, timestamp)
+        // Create a map to store results
+        val result = mutableMapOf<DashboardCategory, IELTSContent>()
         
+        // Launch parallel coroutines for each category
+        Log.d(TAG, "Starting parallel API requests for all IELTS categories")
+        val deferreds = listOf(
+            async { 
+                generateTipForCategory(
+                    DashboardCategory.READING, 
+                    preferences, 
+                    timestamp, 
+                    APIProviderFactory.ProviderType.GROQ
+                ) 
+            },
+            async { 
+                generateTipForCategory(
+                    DashboardCategory.LISTENING, 
+                    preferences, 
+                    timestamp, 
+                    APIProviderFactory.ProviderType.OPENROUTER
+                ) 
+            },
+            async { 
+                generateTipForCategory(
+                    DashboardCategory.WRITING, 
+                    preferences, 
+                    timestamp, 
+                    APIProviderFactory.ProviderType.MISTRAL
+                ) 
+            },
+            async { 
+                generateTipForCategory(
+                    DashboardCategory.SPEAKING, 
+                    preferences, 
+                    timestamp, 
+                    APIProviderFactory.ProviderType.NEW_GROQ
+                ) 
+            }
+        )
+        
+        // Wait for all results and combine them
+        val results = deferreds.awaitAll()
+        results.forEach { (category, content) ->
+            result[category] = content
+        }
+        
+        Log.d(TAG, "Completed all parallel API requests. Results: ${result.size}/${DashboardCategory.values().size} categories")
+        
+        return@withContext result
+    }
+    
+    /**
+     * Generates a tip for a specific IELTS category using the specified API provider
+     * @param category The IELTS category
+     * @param preferences The user preferences
+     * @param timestamp The current timestamp
+     * @param providerType The API provider to use
+     * @return A pair of the category and the generated content
+     */
+    private suspend fun generateTipForCategory(
+        category: DashboardCategory,
+        preferences: UserPreferences,
+        timestamp: Long,
+        providerType: APIProviderFactory.ProviderType
+    ): Pair<DashboardCategory, IELTSContent> = withContext(Dispatchers.IO) {
         try {
+            val prompt = buildPersonalizedPromptForCategory(category, preferences, timestamp)
+            
             val messages = listOf(
-                mapOf("role" to "system", "content" to "You are a knowledgeable IELTS exam preparation assistant. Generate unique and detailed explanations for IELTS tips."),
+                mapOf("role" to "system", "content" to "You are a knowledgeable IELTS exam preparation assistant. Generate a unique and detailed explanation for an IELTS ${category.name.lowercase()} tip."),
                 mapOf("role" to "user", "content" to prompt)
             )
             
@@ -48,88 +120,62 @@ class AISearchQueryGenerator(
                 messages = messages,
                 stream = true,
                 temperature = 0.8,
-                maxTokens = 400  // Increased for longer explanations
+                maxTokens = 200  // Reduced since we're only generating one tip
             )
             
-            Log.d(TAG, "Sending request with completion: $chatCompletion")
-            // Use NewGroq provider for IELTS tip generation
-            val response = ApiService.getChatCompletion(
-                chatCompletion,
-                APIProviderFactory.ProviderType.NEW_GROQ
-            )
+            Log.d(TAG, "Sending request for ${category.name} with provider ${providerType.name}")
+            val response = ApiService.getChatCompletion(chatCompletion, providerType)
             val responseText = response.byteStream().bufferedReader().use { it.readText() }
-            Log.d(TAG, "Raw API Response: $responseText")
+            Log.d(TAG, "Received response for ${category.name} from ${providerType.name}")
             
             val content = extractContentFromResponse(responseText)
-            Log.d(TAG, "Extracted content: $content")
+            val parsedContent = parseSingleTip(content)
             
-            val tipExplanationPairs = parseContent(content)
-            Log.d(TAG, "Parsed tip-explanation pairs: $tipExplanationPairs")
-            
-            val result = mutableMapOf<DashboardCategory, IELTSContent>()
-            for ((categoryName, content) in tipExplanationPairs) {
-                val category = when (categoryName.lowercase()) {
-                    "reading" -> DashboardCategory.READING
-                    "listening" -> DashboardCategory.LISTENING
-                    "writing" -> DashboardCategory.WRITING
-                    "speaking" -> DashboardCategory.SPEAKING
-                    else -> continue
-                }
-                result[category] = content
+            if (parsedContent != null) {
+                Log.d(TAG, "Successfully parsed tip for ${category.name} from ${providerType.name}")
+                return@withContext category to parsedContent
+            } else {
+                Log.w(TAG, "Failed to parse tip for ${category.name} from ${providerType.name}, using fallback")
+                return@withContext category to fallbackContent(category)
             }
-            
-            for (category in DashboardCategory.values()) {
-                if (!result.containsKey(category)) {
-                    result[category] = IELTSContent(
-                        tip = "Practice ${category.name.lowercase()} with official IELTS materials",
-                        explanation = "Focus on official IELTS ${category.name.lowercase()} practice materials to familiarize yourself with the exam format and requirements."
-                    )
-                }
-            }
-            
-            result
         } catch (e: Exception) {
-            Log.e(TAG, "Error generating content", e)
-            DashboardCategory.values().associateWith { category ->
-                IELTSContent(
-                    tip = "Practice ${category.name.lowercase()} with official IELTS materials",
-                    explanation = "Focus on official IELTS ${category.name.lowercase()} practice materials to familiarize yourself with the exam format and requirements."
-                )
-            }
+            Log.e(TAG, "Error generating content for ${category.name} with ${providerType.name}", e)
+            return@withContext category to fallbackContent(category)
         }
     }
     
-    private fun buildPersonalizedPrompt(preferences: UserPreferences, timestamp: Long): String {
+    /**
+     * Builds a personalized prompt for a specific IELTS category
+     * @param category The IELTS category
+     * @param preferences The user preferences
+     * @param timestamp The current timestamp
+     * @return The personalized prompt
+     */
+    private fun buildPersonalizedPromptForCategory(
+        category: DashboardCategory, 
+        preferences: UserPreferences, 
+        timestamp: Long
+    ): String {
+        val isWeakestSkill = preferences.weakestSkill.equals(category.name, ignoreCase = true)
+        
         return """
-            Generate 4 NEW and DIFFERENT IELTS study tips with detailed explanations (timestamp: $timestamp).
-            Each tip should be concise and actionable, with a detailed explanation of how to implement it.
+            Generate 1 NEW and UNIQUE IELTS ${category.name} study tip with detailed explanation (timestamp: $timestamp).
+            The tip should be concise and actionable, with a detailed explanation of how to implement it.
             
             User Profile:
             - Weakest skill: ${preferences.weakestSkill}
             - Target band score: ${preferences.targetBandScore}
             - Study goal: ${preferences.studyGoal}
             
-            Focus on these skills:
-            1. Reading
-            2. Listening
-            3. Writing
-            4. Speaking
-            
             RESPONSE FORMAT:
-            Return exactly 4 pairs in this format:
-            "Reading: {tip} || {detailed explanation}",
-            "Listening: {tip} || {detailed explanation}",
-            "Writing: {tip} || {detailed explanation}",
-            "Speaking: {tip} || {detailed explanation}"
+            Return exactly 1 pair in this format:
+            "{tip} || {detailed explanation}"
             
             RULES:
-            1. Always return EXACTLY 4 pairs
-            2. Each pair must be in quotation marks and separated by commas
-            3. Each pair must start with the category name followed by colon
-            4. Tips should be 10-15 words
-            5. Explanations should be 50-100 words and provide actionable guidance
-            6. Use || to separate tip and explanation
-            7. Make the ${preferences.weakestSkill} tip especially targeted and specific
+            1. Tip should be 10-15 words
+            2. Explanation should be 50-100 words and provide actionable guidance
+            3. Use || to separate tip and explanation
+            ${if (isWeakestSkill) "4. Make this tip especially targeted and specific since ${category.name} is the user's weakest skill" else ""}
         """.trimIndent()
     }
     
@@ -187,24 +233,35 @@ class AISearchQueryGenerator(
     }
     
     /**
-     * Parses the queries from the response
-     * @return Map of category name to query
+     * Parses a single tip from the response
+     * @param response The response text
+     * @return The parsed IELTS content or null if parsing failed
      */
-    private fun parseContent(response: String): Map<String, IELTSContent> {
-        val result = mutableMapOf<String, IELTSContent>()
-        
-        val pattern = Pattern.compile(""""(Reading|Listening|Writing|Speaking):\s*([^|]+)\|\|\s*([^"]+)"""", Pattern.CASE_INSENSITIVE)
+    private fun parseSingleTip(response: String): IELTSContent? {
+        // Simplified parsing for a single tip
+        val pattern = Pattern.compile("""([^|]+)\|\|\s*([^"]+)""", Pattern.CASE_INSENSITIVE)
         val matcher = pattern.matcher(response)
         
-        while (matcher.find()) {
-            val category = matcher.group(1)
-            val tip = matcher.group(2)
-            val explanation = matcher.group(3)
-            if (category != null && tip != null && explanation != null) {
-                result[category] = IELTSContent(tip.trim(), explanation.trim())
+        if (matcher.find()) {
+            val tip = matcher.group(1)
+            val explanation = matcher.group(2)
+            if (tip != null && explanation != null) {
+                return IELTSContent(tip.trim(), explanation.trim())
             }
         }
         
-        return result
+        return null
+    }
+    
+    /**
+     * Provides fallback content for a category if the API request fails
+     * @param category The IELTS category
+     * @return The fallback IELTS content
+     */
+    private fun fallbackContent(category: DashboardCategory): IELTSContent {
+        return IELTSContent(
+            tip = "Practice ${category.name.lowercase()} with official IELTS materials",
+            explanation = "Focus on official IELTS ${category.name.lowercase()} practice materials to familiarize yourself with the exam format and requirements."
+        )
     }
 } 
