@@ -3,7 +3,6 @@ package com.example.data.ai
 import android.util.Log
 import com.example.data.DashboardCategory
 import com.example.data.api.ApiService
-import com.example.data.api.ChatApi
 import com.example.data.models.ChatCompletion
 import com.example.data.models.ChatResponse
 import com.example.data.models.IELTSContent
@@ -12,6 +11,7 @@ import com.example.data.preferences.PreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
 import java.util.regex.Pattern
 
 /**
@@ -21,7 +21,6 @@ class AISearchQueryGenerator(
     private val preferencesManager: PreferencesManager
 ) {
     private val TAG = "AISearchQueryGenerator"
-    private val chatApi = ApiService.create().create(ChatApi::class.java)
     private val json = Json { 
         ignoreUnknownKeys = true 
         encodeDefaults = true
@@ -52,7 +51,7 @@ class AISearchQueryGenerator(
             )
             
             Log.d(TAG, "Sending request with completion: $chatCompletion")
-            val response = chatApi.getChatCompletion(chatCompletion)
+            val response = ApiService.getChatCompletion(chatCompletion)
             val responseText = response.byteStream().bufferedReader().use { it.readText() }
             Log.d(TAG, "Raw API Response: $responseText")
             
@@ -146,7 +145,7 @@ class AISearchQueryGenerator(
             for (dataLine in dataLines) {
                 try {
                     Log.d(TAG, "Processing data line: $dataLine")
-                    val chatResponse = json.decodeFromString(ChatResponse.serializer(), dataLine)
+                    val chatResponse = json.decodeFromString<ChatResponse>(dataLine)
                     when {
                         chatResponse.choices.firstOrNull()?.delta?.content != null -> {
                             val deltaContent = chatResponse.choices.first().delta?.content

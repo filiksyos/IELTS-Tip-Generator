@@ -1,73 +1,41 @@
 package com.example.data.api
 
 import android.util.Log
-import com.example.data.BuildConfig
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
+import com.example.data.api.provider.APIProviderFactory
+import com.example.data.models.ChatCompletion
+import okhttp3.ResponseBody
 import retrofit2.Retrofit
 
 /**
- * API service for communicating with the Groq API
+ * API service for communicating with AI APIs
+ * This class now uses the APIProvider interface to support multiple API providers
  */
 object ApiService {
     private const val TAG = "ApiService"
-    private const val BASE_URL = "https://api.groq.com/openai/v1/"
     
-    // You'll need to add your API key to local.properties
-    // groq_api_key=your_api_key_here
-    private val API_KEY = try {
-        BuildConfig.GROQ_API_KEY.also { key ->
-            if (key.isBlank()) {
-                Log.e(TAG, "API key is missing or empty")
-            } else {
-                Log.d(TAG, "API key loaded successfully")
-            }
-        }
-    } catch (e: Exception) {
-        Log.e(TAG, "Error getting API key from BuildConfig", e)
-        "" // Fallback to empty string
-    }
+    // Get the default provider (Groq)
+    private val defaultProvider = APIProviderFactory.getProvider()
     
-    private val json = Json { 
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
-    
+    /**
+     * Create a Retrofit instance for the API
+     * @return Retrofit instance
+     */
     fun create(): Retrofit {
-        val client = OkHttpClient.Builder()
-            .addInterceptor { chain ->
-                val original = chain.request()
-                Log.d(TAG, "Making request to: ${original.url}")
-                
-                val request = original.newBuilder()
-                    .addHeader("Authorization", "Bearer $API_KEY")
-                    .build()
-                
-                val response = chain.proceed(request)
-                
-                Log.d(TAG, "Response received - Status: ${response.code}")
-                
-                if (!response.isSuccessful) {
-                    val errorBody = response.peekBody(Long.MAX_VALUE).string()
-                    Log.e(TAG, """
-                        API Error:
-                        Code: ${response.code}
-                        Message: ${response.message}
-                        Body: $errorBody
-                        Request URL: ${original.url}
-                    """.trimIndent())
-                }
-                
-                response
-            }
-            .build()
-
-        return Retrofit.Builder()
-            .client(client)
-            .baseUrl(BASE_URL)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
+        return defaultProvider.createRetrofit()
+    }
+    
+    /**
+     * Get a chat completion from the API
+     * @param completion The chat completion request
+     * @param providerType The provider type to use (defaults to GROQ)
+     * @return The response body
+     */
+    suspend fun getChatCompletion(
+        completion: ChatCompletion,
+        providerType: APIProviderFactory.ProviderType = APIProviderFactory.ProviderType.GROQ
+    ): ResponseBody {
+        val provider = APIProviderFactory.getProvider(providerType)
+        Log.d(TAG, "Using provider: ${providerType.name}")
+        return provider.getChatCompletion(completion)
     }
 } 

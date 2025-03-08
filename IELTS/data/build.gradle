@@ -15,7 +15,7 @@ android {
         consumerProguardFiles "consumer-rules.pro"
         
         // Add BuildConfig generation
-        buildConfigField "String", "GROQ_API_KEY", getApiKey()
+        buildConfigField "String", "GROQ_API_KEY", getGroqApiKey()
     }
 
     buildTypes {
@@ -37,18 +37,23 @@ android {
     }
 }
 
-// Function to get API key from local.properties
-def getApiKey() {
+// Function to get API key from local.properties with a specific key
+def getApiKey(String propertyName) {
     def properties = new Properties()
     def localPropertiesFile = rootProject.file('local.properties')
     if (localPropertiesFile.exists()) {
         properties.load(localPropertiesFile.newDataInputStream())
-        def apiKey = properties.getProperty('groq_api_key')
+        def apiKey = properties.getProperty(propertyName)
         if (apiKey != null) {
             return "\"$apiKey\""
         }
     }
     return '""' // Return empty string if not found
+}
+
+// Function to get Groq API key
+def getGroqApiKey() {
+    return getApiKey('groq_api_key')
 }
 
 dependencies {
