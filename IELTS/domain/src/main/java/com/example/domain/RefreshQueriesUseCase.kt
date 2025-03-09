@@ -5,14 +5,11 @@ import com.example.data.DashboardItems
 import com.example.data.RepositoryInterface
 import kotlinx.coroutines.flow.StateFlow
 
-class RefreshQueriesUseCase(private val repository: RepositoryInterface) {
-    /**
-     * Refreshes the AI-generated queries
-     */
-    suspend operator fun invoke() {
-        repository.refreshQueries()
-    }
-    
+/**
+ * Use case for observing dashboard items
+ * Note: Refresh functionality has been removed as we now generate tips on-demand
+ */
+class DashboardItemsObserverUseCase(private val repository: RepositoryInterface) {
     /**
      * Observes dashboard items
      */

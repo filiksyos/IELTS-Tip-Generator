@@ -17,14 +17,6 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 class SettingsFragment : Fragment() {
     private val viewModel: SettingsViewModel by viewModel()
     
-    private lateinit var readingProblemsLayout: TextInputLayout
-    private lateinit var readingProblemsInput: TextInputEditText
-    private lateinit var listeningProblemsLayout: TextInputLayout
-    private lateinit var listeningProblemsInput: TextInputEditText
-    private lateinit var speakingProblemsLayout: TextInputLayout
-    private lateinit var speakingProblemsInput: TextInputEditText
-    private lateinit var writingProblemsLayout: TextInputLayout
-    private lateinit var writingProblemsInput: TextInputEditText
     private lateinit var studyGoalLayout: TextInputLayout
     private lateinit var studyGoalInput: TextInputEditText
     private lateinit var saveButton: MaterialButton
@@ -46,14 +38,6 @@ class SettingsFragment : Fragment() {
     }
 
     private fun setupViews(view: View) {
-        readingProblemsLayout = view.findViewById(R.id.readingProblemsLayout)
-        readingProblemsInput = view.findViewById(R.id.readingProblemsInput)
-        listeningProblemsLayout = view.findViewById(R.id.listeningProblemsLayout)
-        listeningProblemsInput = view.findViewById(R.id.listeningProblemsInput)
-        speakingProblemsLayout = view.findViewById(R.id.speakingProblemsLayout)
-        speakingProblemsInput = view.findViewById(R.id.speakingProblemsInput)
-        writingProblemsLayout = view.findViewById(R.id.writingProblemsLayout)
-        writingProblemsInput = view.findViewById(R.id.writingProblemsInput)
         studyGoalLayout = view.findViewById(R.id.studyGoalLayout)
         studyGoalInput = view.findViewById(R.id.studyGoalInput)
         saveButton = view.findViewById(R.id.saveButton)
@@ -61,11 +45,7 @@ class SettingsFragment : Fragment() {
 
     private fun loadCurrentPreferences() {
         viewModel.getUserPreferences().let { preferences ->
-            readingProblemsInput.setText(preferences.readingProblems)
-            listeningProblemsInput.setText(preferences.listeningProblems)
-            speakingProblemsInput.setText(preferences.speakingProblems)
-            writingProblemsInput.setText(preferences.writingProblems)
-            
+            // Set study goal
             studyGoalInput.setText(preferences.studyGoal)
         }
     }
@@ -73,10 +53,6 @@ class SettingsFragment : Fragment() {
     private fun setupButton() {
         saveButton.setOnClickListener {
             val preferences = UserPreferences(
-                readingProblems = readingProblemsInput.text.toString(),
-                listeningProblems = listeningProblemsInput.text.toString(),
-                speakingProblems = speakingProblemsInput.text.toString(),
-                writingProblems = writingProblemsInput.text.toString(),
                 studyGoal = studyGoalInput.text.toString(),
                 isFirstTime = false
             )

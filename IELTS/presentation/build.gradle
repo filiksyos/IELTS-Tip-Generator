@@ -55,7 +55,8 @@ dependencies {
     //splash screen
     implementation("androidx.core:core-splashscreen:1.0.1")
 
-
+    // SwipeRefreshLayout
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
 
     // Testing dependencies
     testImplementation("junit:junit:4.13.2")

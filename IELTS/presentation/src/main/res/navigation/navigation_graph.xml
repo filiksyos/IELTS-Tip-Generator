@@ -3,146 +3,67 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/navigation_graph"
-    app:startDestination="@id/onboardingWelcomeFragment">
+    app:startDestination="@id/onboardingFragment">
 
-    <!-- Welcome screen -->
-    <fragment
-        android:id="@+id/onboardingWelcomeFragment"
-        android:name="com.example.presentation.onboarding.OnboardingWelcomeFragment"
-        android:label="OnboardingWelcomeFragment"
-        tools:layout="@layout/fragment_onboarding_welcome">
-        <action
-            android:id="@+id/action_welcome_to_reading"
-            app:destination="@id/onboardingReadingFragment" />
-    </fragment>
-
-    <!-- Reading problems screen -->
-    <fragment
-        android:id="@+id/onboardingReadingFragment"
-        android:name="com.example.presentation.onboarding.OnboardingReadingFragment"
-        android:label="OnboardingReadingFragment"
-        tools:layout="@layout/fragment_onboarding_reading">
-        <action
-            android:id="@+id/action_reading_to_listening"
-            app:destination="@id/onboardingListeningFragment" />
-        <action
-            android:id="@+id/action_reading_to_welcome"
-            app:destination="@id/onboardingWelcomeFragment" />
-    </fragment>
-
-    <!-- Listening problems screen -->
-    <fragment
-        android:id="@+id/onboardingListeningFragment"
-        android:name="com.example.presentation.onboarding.OnboardingListeningFragment"
-        android:label="OnboardingListeningFragment"
-        tools:layout="@layout/fragment_onboarding_listening">
-        <action
-            android:id="@+id/action_listening_to_speaking"
-            app:destination="@id/onboardingSpeakingFragment" />
-        <action
-            android:id="@+id/action_listening_to_reading"
-            app:destination="@id/onboardingReadingFragment" />
-    </fragment>
-
-    <!-- Speaking problems screen -->
-    <fragment
-        android:id="@+id/onboardingSpeakingFragment"
-        android:name="com.example.presentation.onboarding.OnboardingSpeakingFragment"
-        android:label="OnboardingSpeakingFragment"
-        tools:layout="@layout/fragment_onboarding_speaking">
-        <action
-            android:id="@+id/action_speaking_to_writing"
-            app:destination="@id/onboardingWritingFragment" />
-        <action
-            android:id="@+id/action_speaking_to_listening"
-            app:destination="@id/onboardingListeningFragment" />
-    </fragment>
-
-    <!-- Writing problems screen -->
-    <fragment
-        android:id="@+id/onboardingWritingFragment"
-        android:name="com.example.presentation.onboarding.OnboardingWritingFragment"
-        android:label="OnboardingWritingFragment"
-        tools:layout="@layout/fragment_onboarding_writing">
-        <action
-            android:id="@+id/action_writing_to_study_goal"
-            app:destination="@id/onboardingStudyGoalFragment" />
-        <action
-            android:id="@+id/action_writing_to_speaking"
-            app:destination="@id/onboardingSpeakingFragment" />
-    </fragment>
-
-    <!-- Study goal screen -->
-    <fragment
-        android:id="@+id/onboardingStudyGoalFragment"
-        android:name="com.example.presentation.onboarding.OnboardingStudyGoalFragment"
-        android:label="OnboardingStudyGoalFragment"
-        tools:layout="@layout/fragment_onboarding_study_goal">
-        <action
-            android:id="@+id/action_study_goal_to_main"
-            app:destination="@id/main_navigation"
-            app:popUpTo="@id/onboardingWelcomeFragment"
-            app:popUpToInclusive="true" />
-        <action
-            android:id="@+id/action_study_goal_to_writing"
-            app:destination="@id/onboardingWritingFragment" />
-    </fragment>
-
-    <!-- Legacy onboarding fragment (kept for backward compatibility) -->
+    <!-- Onboarding flow -->
     <fragment
         android:id="@+id/onboardingFragment"
         android:name="com.example.presentation.onboarding.OnboardingFragment"
-        android:label="OnboardingFragment"
-        tools:layout="@layout/fragment_onboarding" />
+        android:label="OnboardingFragment">
+        <action
+            android:id="@+id/action_onboarding_to_study_goal"
+            app:destination="@id/onboardingStudyGoalFragment"
+            app:popUpTo="@id/onboardingFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
 
+    <fragment
+        android:id="@+id/onboardingStudyGoalFragment"
+        android:name="com.example.presentation.onboarding.OnboardingStudyGoalFragment"
+        android:label="OnboardingStudyGoalFragment">
+        <action
+            android:id="@+id/action_study_goal_to_main"
+            app:destination="@id/main_navigation"
+            app:popUpTo="@id/navigation_graph"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <!-- Main navigation -->
     <navigation android:id="@+id/main_navigation"
-        app:startDestination="@id/navigation_home">
+        app:startDestination="@id/navigation_dashboard">
         
-        <!-- Generated Tips (renamed from Home) -->
         <fragment
-            android:id="@+id/navigation_home"
+            android:id="@+id/navigation_dashboard"
             android:name="com.example.presentation.Fragment.DashboardFragment"
-            android:label="GeneratedTipsFragment"
-            tools:layout="@layout/fragment_dashboard">
-            <action
-                android:id="@+id/action_dashboardFragment_to_settingsFragment"
-                app:destination="@id/navigation_settings" />
-        </fragment>
+            android:label="DashboardFragment" />
 
-        <!-- Settings -->
-        <fragment
-            android:id="@+id/navigation_settings"
-            android:name="com.example.presentation.settings.SettingsFragment"
-            android:label="SettingsFragment"
-            tools:layout="@layout/fragment_settings" />
-            
-        <!-- Get Tip -->
         <fragment
             android:id="@+id/navigation_get_tip"
             android:name="com.example.presentation.gettip.GetTipFragment"
-            android:label="GetTipFragment"
-            tools:layout="@layout/fragment_get_tip">
+            android:label="GetTipFragment">
             <action
                 android:id="@+id/action_getTipFragment_to_tipInputFragment"
                 app:destination="@id/tipInputFragment" />
         </fragment>
-        
-        <!-- Tip Input -->
+
         <fragment
             android:id="@+id/tipInputFragment"
             android:name="com.example.presentation.gettip.TipInputFragment"
-            android:label="TipInputFragment"
-            tools:layout="@layout/fragment_tip_input">
+            android:label="TipInputFragment">
             <action
-                android:id="@+id/action_tipInputFragment_to_generatedTipFragment"
-                app:destination="@id/generatedTipFragment" />
+                android:id="@+id/action_tipInputFragment_to_tipDisplayFragment"
+                app:destination="@id/tipDisplayFragment" />
         </fragment>
-        
-        <!-- Generated Tip -->
+
         <fragment
-            android:id="@+id/generatedTipFragment"
-            android:name="com.example.presentation.gettip.GeneratedTipFragment"
-            android:label="GeneratedTipFragment"
-            tools:layout="@layout/fragment_generated_tip" />
+            android:id="@+id/tipDisplayFragment"
+            android:name="com.example.presentation.gettip.TipDisplayFragment"
+            android:label="TipDisplayFragment" />
+
+        <fragment
+            android:id="@+id/navigation_settings"
+            android:name="com.example.presentation.settings.SettingsFragment"
+            android:label="SettingsFragment" />
     </navigation>
+
 </navigation>

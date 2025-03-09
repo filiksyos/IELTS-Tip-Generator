@@ -31,11 +31,6 @@ class MainActivity : AppCompatActivity() {
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
                 R.id.onboardingFragment,
-                R.id.onboardingWelcomeFragment,
-                R.id.onboardingReadingFragment,
-                R.id.onboardingListeningFragment,
-                R.id.onboardingSpeakingFragment,
-                R.id.onboardingWritingFragment,
                 R.id.onboardingStudyGoalFragment -> bottomNav.visibility = View.GONE
                 else -> bottomNav.visibility = View.VISIBLE
             }

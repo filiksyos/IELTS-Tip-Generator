@@ -1,102 +1,104 @@
 package com.example.presentation.Fragment
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.domain.DashboardCategoryType
+import com.example.data.DashboardCategory
+import com.example.data.DashboardItems
+import com.example.data.models.SavedTip
 import com.example.presentation.R
 import com.example.presentation.adapter.DashboardAdapter
 import com.example.presentation.databinding.FragmentDashboardBinding
-import com.example.presentation.viewModel.DashboardViewModel
+import com.example.presentation.viewModel.SavedTipsViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import androidx.core.view.MenuProvider
-import androidx.lifecycle.Lifecycle
 
 class DashboardFragment : Fragment() {
-
-    private lateinit var binding: FragmentDashboardBinding
-    private val dashboardViewModel: DashboardViewModel by viewModel()
-    private lateinit var dashboardAdapter: DashboardAdapter
-
+    
+    private val savedTipsViewModel: SavedTipsViewModel by viewModel()
+    private var _binding: FragmentDashboardBinding? = null
+    private val binding get() = _binding!!
+    private lateinit var adapter: DashboardAdapter
+    
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentDashboardBinding.inflate(inflater, container, false)
+        _binding = FragmentDashboardBinding.inflate(inflater, container, false)
         return binding.root
     }
-
+    
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        setupAdapter()
+        
         setupRecyclerView()
-        setupRefreshButton()
-        setupMenu()
         observeViewModel()
-
-        dashboardViewModel.loadDashboardItems()
+        
+        // Set title
+        binding.dashboardTitle.text = "Your Saved Tips"
+        
+        // Disable swipe refresh functionality
+        binding.swipeRefreshLayout.isEnabled = false
     }
-
-    private fun setupMenu() {
-        requireActivity().addMenuProvider(object : MenuProvider {
-            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-                menuInflater.inflate(R.menu.dashboard_menu, menu)
-            }
-
-            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-                return when (menuItem.itemId) {
-                    R.id.action_settings -> {
-                        findNavController().navigate(R.id.action_dashboardFragment_to_settingsFragment)
-                        true
-                    }
-                    else -> false
-                }
-            }
-        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
-    }
-
-    private fun setupAdapter() {
-        dashboardAdapter = DashboardAdapter { item -> showExplanation(item.displayTip, item.explanation) }
-    }
-
+    
     private fun setupRecyclerView() {
-        binding.rvDashboard.apply {
-            layoutManager = LinearLayoutManager(requireContext())
-            adapter = dashboardAdapter
+        adapter = DashboardAdapter { item ->
+            // Handle item click - show explanation
+            showExplanationBottomSheet(item)
+        }
+        
+        binding.recyclerView.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = this@DashboardFragment.adapter
         }
     }
     
-    private fun setupRefreshButton() {
-        binding.refreshButton.setOnClickListener {
-            Log.d("DashboardFragment", "Refresh button clicked")
-            dashboardViewModel.refreshQueries()
-        }
-    }
-
     private fun observeViewModel() {
-        dashboardViewModel.dashboardItems.observe(viewLifecycleOwner, Observer { itemsMap ->
-            Log.d("DashboardFragment", "Observed items: $itemsMap")
-            dashboardAdapter.submitCategorizedList(itemsMap)
-        })
+        savedTipsViewModel.savedTips.observe(viewLifecycleOwner) { savedTips ->
+            updateUI(savedTips)
+        }
         
-        dashboardViewModel.isRefreshing.observe(viewLifecycleOwner, Observer { isRefreshing ->
-            binding.refreshProgressBar.visibility = if (isRefreshing) View.VISIBLE else View.GONE
-            binding.refreshButton.visibility = if (isRefreshing) View.INVISIBLE else View.VISIBLE
-        })
+        // Load saved tips when fragment is created
+        savedTipsViewModel.loadSavedTips()
     }
-
-    private fun showExplanation(tip: String, explanation: String) {
-        ExplanationBottomSheetFragment.newInstance(tip, explanation)
-            .show(childFragmentManager, "explanation")
+    
+    private fun updateUI(savedTips: List<SavedTip>) {
+        if (savedTips.isEmpty()) {
+            binding.emptyStateText.visibility = View.VISIBLE
+            binding.emptyStateText.text = "No saved tips yet. Go to 'Get Tips' to create some!"
+        } else {
+            binding.emptyStateText.visibility = View.GONE
+        }
+        
+        // Convert SavedTip to DashboardItems for the adapter
+        val dashboardItems = savedTips.map { savedTip ->
+            DashboardItems(
+                itemText = savedTip.category.title,
+                cardType = "Tip",
+                color = savedTip.category.color,
+                explanation = savedTip.explanation,
+                displayTip = savedTip.tip,
+                id = savedTip.id
+            )
+        }
+        
+        // Submit list to adapter
+        adapter.submitList(dashboardItems)
+    }
+    
+    private fun showExplanationBottomSheet(item: DashboardItems) {
+        val bottomSheetFragment = ExplanationBottomSheetFragment.newInstance(
+            item.displayTip,
+            item.explanation
+        )
+        bottomSheetFragment.show(childFragmentManager, bottomSheetFragment.tag)
+    }
+    
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

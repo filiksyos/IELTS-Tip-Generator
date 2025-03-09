@@ -33,25 +33,32 @@ class OnboardingStudyGoalFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
+        setupViews(view)
+        setupClickListeners()
+    }
+
+    private fun setupViews(view: View) {
         backButton = view.findViewById(R.id.backButton)
         studyGoalInput = view.findViewById(R.id.studyGoalInput)
         finishButton = view.findViewById(R.id.finishButton)
         
+        // Hide back button on initial onboarding
+        if (viewModel.isFirstTime()) {
+            backButton.visibility = View.GONE
+        }
+    }
+    
+    private fun setupClickListeners() {
         backButton.setOnClickListener {
-            findNavController().navigate(R.id.action_study_goal_to_writing)
+            findNavController().navigateUp()
         }
         
         finishButton.setOnClickListener {
-            // Save the study goal to the ViewModel
-            viewModel.setStudyGoal(studyGoalInput.text.toString())
+            // Save only the study goal
+            val studyGoal = studyGoalInput.text.toString()
             
-            // Create and save the final UserPreferences object
             val preferences = UserPreferences(
-                readingProblems = viewModel.getReadingProblems(),
-                listeningProblems = viewModel.getListeningProblems(),
-                speakingProblems = viewModel.getSpeakingProblems(),
-                writingProblems = viewModel.getWritingProblems(),
-                studyGoal = viewModel.getStudyGoal(),
+                studyGoal = studyGoal,
                 isFirstTime = false
             )
             

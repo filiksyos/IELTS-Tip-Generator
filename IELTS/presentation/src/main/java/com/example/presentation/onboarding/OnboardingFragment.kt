@@ -65,10 +65,6 @@ class OnboardingFragment : Fragment() {
     private fun setupButton() {
         getStartedButton.setOnClickListener {
             val preferences = UserPreferences(
-                readingProblems = readingProblemsInput.text.toString(),
-                listeningProblems = listeningProblemsInput.text.toString(),
-                speakingProblems = speakingProblemsInput.text.toString(),
-                writingProblems = writingProblemsInput.text.toString(),
                 studyGoal = studyGoalInput.text.toString(),
                 isFirstTime = false
             )

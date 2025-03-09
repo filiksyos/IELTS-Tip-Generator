@@ -1,11 +1,13 @@
 package com.example.data
 
 import android.graphics.Color
+import java.util.UUID
 
 data class DashboardItems(
-    val itemText: String? = null,
-    val cardType: String? = null,
-    val color: Int = Color.GRAY,
-    val explanation: String = "",
-    val displayTip: String = itemText ?: ""
+    val id: String = UUID.randomUUID().toString(),
+    val itemText: String,
+    val cardType: String,
+    val color: Int,
+    val explanation: String,
+    val displayTip: String
 )

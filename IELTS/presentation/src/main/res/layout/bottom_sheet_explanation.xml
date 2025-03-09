@@ -1,33 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp"
-    app:behavior_hideable="true"
-    app:behavior_peekHeight="0dp"
-    app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+    android:padding="16dp">
 
     <TextView
-        android:id="@+id/tvTipTitle"
+        android:id="@+id/explanationTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
-        android:layout_marginBottom="8dp"/>
+        android:text="Tip Explanation"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textAlignment="center"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/tvExplanation"
+        android:id="@+id/tipTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginTop="16dp"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/explanationTitle" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnClose"
+    <TextView
+        android:id="@+id/explanationTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Close"
-        style="@style/Widget.MaterialComponents.Button.TextButton"/>
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/tipTextView"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-</LinearLayout> 
+</androidx.constraintlayout.widget.ConstraintLayout> 

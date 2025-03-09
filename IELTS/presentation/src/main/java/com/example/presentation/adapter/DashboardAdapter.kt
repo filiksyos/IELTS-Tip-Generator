@@ -6,65 +6,42 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.data.DashboardItems
-import com.example.domain.DashboardCategoryType
 import com.example.presentation.databinding.DashboardCardviewItemsBinding
 
 class DashboardAdapter(
     private val onItemClick: (DashboardItems) -> Unit
-) : ListAdapter<DashboardAdapter.DashboardListItem, RecyclerView.ViewHolder>(DashboardDiffCallback()) {
-
-    sealed class DashboardListItem {
-        data class Item(val dashboardItem: DashboardItems) : DashboardListItem()
-    }
-
-    companion object {
-        private const val VIEW_TYPE_ITEM = 1
-    }
+) : ListAdapter<DashboardItems, DashboardAdapter.ItemViewHolder>(DashboardDiffCallback()) {
 
     inner class ItemViewHolder(val binding: DashboardCardviewItemsBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        fun bind(item: DashboardListItem.Item) {
+        fun bind(item: DashboardItems) {
             binding.apply {
-                cardTitle.text = item.dashboardItem.itemText
-                cardDescription.text = item.dashboardItem.displayTip
-                root.setCardBackgroundColor(item.dashboardItem.color)
-                root.setOnClickListener { onItemClick(item.dashboardItem) }
+                cardTitle.text = item.itemText
+                cardDescription.text = item.displayTip
+                root.setCardBackgroundColor(item.color)
+                root.setOnClickListener { onItemClick(item) }
             }
         }
     }
 
-    override fun getItemViewType(position: Int): Int {
-        return VIEW_TYPE_ITEM
-    }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
         val binding = DashboardCardviewItemsBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
         return ItemViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        (holder as ItemViewHolder).bind(getItem(position) as DashboardListItem.Item)
+    override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
+        holder.bind(getItem(position))
     }
 
-    class DashboardDiffCallback : DiffUtil.ItemCallback<DashboardListItem>() {
-        override fun areItemsTheSame(oldItem: DashboardListItem, newItem: DashboardListItem): Boolean {
-            return (oldItem as DashboardListItem.Item).dashboardItem.itemText == (newItem as DashboardListItem.Item).dashboardItem.itemText
+    class DashboardDiffCallback : DiffUtil.ItemCallback<DashboardItems>() {
+        override fun areItemsTheSame(oldItem: DashboardItems, newItem: DashboardItems): Boolean {
+            return oldItem.id == newItem.id
         }
 
-        override fun areContentsTheSame(oldItem: DashboardListItem, newItem: DashboardListItem): Boolean {
+        override fun areContentsTheSame(oldItem: DashboardItems, newItem: DashboardItems): Boolean {
             return oldItem == newItem
         }
-    }
-
-    fun submitCategorizedList(itemsMap: Map<DashboardCategoryType, List<DashboardItems>>) {
-        val consolidatedList = mutableListOf<DashboardListItem>()
-
-        itemsMap.values.flatten().forEach { item ->
-            consolidatedList.add(DashboardListItem.Item(item))
-        }
-
-        submitList(consolidatedList)
     }
 }
