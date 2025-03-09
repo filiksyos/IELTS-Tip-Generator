@@ -9,7 +9,7 @@ class RefreshQueriesUseCase(private val repository: RepositoryInterface) {
     /**
      * Refreshes the AI-generated queries
      */
-    operator fun invoke() {
+    suspend operator fun invoke() {
         repository.refreshQueries()
     }
     

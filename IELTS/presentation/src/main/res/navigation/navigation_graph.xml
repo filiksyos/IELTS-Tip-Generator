@@ -97,20 +97,52 @@
 
     <navigation android:id="@+id/main_navigation"
         app:startDestination="@id/navigation_home">
+        
+        <!-- Generated Tips (renamed from Home) -->
         <fragment
             android:id="@+id/navigation_home"
             android:name="com.example.presentation.Fragment.DashboardFragment"
-            android:label="DashboardFragment"
+            android:label="GeneratedTipsFragment"
             tools:layout="@layout/fragment_dashboard">
             <action
                 android:id="@+id/action_dashboardFragment_to_settingsFragment"
                 app:destination="@id/navigation_settings" />
         </fragment>
 
+        <!-- Settings -->
         <fragment
             android:id="@+id/navigation_settings"
             android:name="com.example.presentation.settings.SettingsFragment"
             android:label="SettingsFragment"
             tools:layout="@layout/fragment_settings" />
+            
+        <!-- Get Tip -->
+        <fragment
+            android:id="@+id/navigation_get_tip"
+            android:name="com.example.presentation.gettip.GetTipFragment"
+            android:label="GetTipFragment"
+            tools:layout="@layout/fragment_get_tip">
+            <action
+                android:id="@+id/action_getTipFragment_to_tipInputFragment"
+                app:destination="@id/tipInputFragment" />
+        </fragment>
+        
+        <!-- Tip Input -->
+        <fragment
+            android:id="@+id/tipInputFragment"
+            android:name="com.example.presentation.gettip.TipInputFragment"
+            android:label="TipInputFragment"
+            tools:layout="@layout/fragment_tip_input">
+            <action
+                android:id="@+id/action_tipInputFragment_to_generatedTipFragment"
+                app:destination="@id/generatedTipFragment" />
+        </fragment>
+        
+        <!-- Generated Tip -->
+        <fragment
+            android:id="@+id/generatedTipFragment"
+            android:name="com.example.presentation.gettip.GeneratedTipFragment"
+            android:label="GeneratedTipFragment"
+            tools:layout="@layout/fragment_generated_tip" />
     </navigation>
 </navigation>

@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class Repository(
     private val preferencesManager: PreferencesManager
@@ -24,33 +25,65 @@ class Repository(
 
     // Initialize the repository by generating AI queries
     init {
-        refreshQueries()
+        initializeQueries()
+    }
+    
+    /**
+     * Initialize queries without causing conflicts with suspend functions
+     */
+    private fun initializeQueries() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val content = queryGenerator.generateQueriesForAllCategories()
+                updateDashboardItems(content)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error initializing content", e)
+                setDefaultItems()
+            }
+        }
+    }
+
+    /**
+     * Updates the dashboard items with the given content
+     */
+    private fun updateDashboardItems(content: Map<DashboardCategory, IELTSContent>) {
+        val dashboardItems = content.mapValues { (category, ieltsContent) ->
+            createDashboardItemsForCategory(category, ieltsContent)
+        }
+        _dashboardItemsFlow.value = dashboardItems
+    }
+
+    /**
+     * Sets default items if AI generation fails
+     */
+    private fun setDefaultItems() {
+        val defaultItems = DashboardCategory.values().associateWith { category ->
+            createDefaultDashboardItems(category)
+        }
+        _dashboardItemsFlow.value = defaultItems
+    }
+
+    /**
+     * Gets dashboard items for all categories
+     * This implements the RepositoryInterface method
+     */
+    override suspend fun getDashboardItems(): Map<DashboardCategory, IELTSContent> = withContext(Dispatchers.IO) {
+        return@withContext queryGenerator.generateQueriesForAllCategories()
     }
 
     /**
      * Refreshes the AI-generated queries
+     * This implements the RepositoryInterface method
      */
-    override fun refreshQueries() {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val content = queryGenerator.generateQueriesForAllCategories()
-
-                val dashboardItems = content.mapValues { (category, ieltsContent) ->
-                    createDashboardItemsForCategory(category, ieltsContent)
-                }
-
-                _dashboardItemsFlow.value = dashboardItems
-
-                Log.d(TAG, "Successfully refreshed content: $content")
-            } catch (e: Exception) {
-                Log.e(TAG, "Error refreshing content", e)
-
-                val defaultItems = DashboardCategory.values().associateWith { category ->
-                    createDefaultDashboardItems(category)
-                }
-
-                _dashboardItemsFlow.value = defaultItems
-            }
+    override suspend fun refreshQueries(): Map<DashboardCategory, IELTSContent> = withContext(Dispatchers.IO) {
+        try {
+            val content = queryGenerator.generateQueriesForAllCategories()
+            updateDashboardItems(content)
+            return@withContext content
+        } catch (e: Exception) {
+            Log.e(TAG, "Error refreshing content", e)
+            setDefaultItems()
+            throw e
         }
     }
 
@@ -74,9 +107,9 @@ class Repository(
 
     /**
      * Gets dashboard items for a specific category
-     * This method is used by the existing code
+     * This is a helper method used by the existing code
      */
-    override fun getDashboardItems(category: DashboardCategory): List<DashboardItems> {
+    fun getDashboardItemsForCategory(category: DashboardCategory): List<DashboardItems> {
         return _dashboardItemsFlow.value[category] ?: createDefaultDashboardItems(category)
     }
 
@@ -93,5 +126,15 @@ class Repository(
                 displayTip = "Practice ${category.title.lowercase()} with official IELTS materials"
             )
         )
+    }
+
+    /**
+     * Generates a tip for a specific category using the provided user input
+     * @param category The IELTS category to generate a tip for
+     * @param userInput The user's specific problem or issue
+     * @return The generated IELTS content (tip and explanation)
+     */
+    override suspend fun generateTipForCategory(category: DashboardCategory, userInput: String): IELTSContent = withContext(Dispatchers.IO) {
+        return@withContext queryGenerator.generateTipForSingleCategory(category, userInput)
     }
 }

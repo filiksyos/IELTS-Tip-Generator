@@ -1,17 +1,20 @@
 package com.example.data
 
+import com.example.data.models.IELTSContent
 import kotlinx.coroutines.flow.StateFlow
 
 interface RepositoryInterface {
-    fun getDashboardItems(category: DashboardCategory): List<DashboardItems>
+    suspend fun getDashboardItems(): Map<DashboardCategory, IELTSContent>
     
     /**
      * Refreshes the AI-generated queries
      */
-    fun refreshQueries()
+    suspend fun refreshQueries(): Map<DashboardCategory, IELTSContent>
     
     /**
      * StateFlow to observe dashboard items
      */
     val dashboardItemsFlow: StateFlow<Map<DashboardCategory, List<DashboardItems>>>
+
+    suspend fun generateTipForCategory(category: DashboardCategory, userInput: String): IELTSContent
 }

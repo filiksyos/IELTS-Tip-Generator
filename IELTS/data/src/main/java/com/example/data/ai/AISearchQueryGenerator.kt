@@ -145,6 +145,61 @@ class AISearchQueryGenerator(
     }
     
     /**
+     * Generates a tip for a single category using the provided user input
+     * @param category The IELTS category to generate a tip for
+     * @param userInput The user's specific problem or issue
+     * @return The generated IELTS content (tip and explanation)
+     */
+    suspend fun generateTipForSingleCategory(
+        category: DashboardCategory,
+        userInput: String
+    ): IELTSContent = withContext(Dispatchers.IO) {
+        try {
+            val timestamp = System.currentTimeMillis()
+            val prompt = buildPromptWithUserInput(category, userInput, timestamp)
+            
+            // Select the appropriate API provider for the category
+            val providerType = when (category) {
+                DashboardCategory.READING -> APIProviderFactory.ProviderType.GROQ
+                DashboardCategory.LISTENING -> APIProviderFactory.ProviderType.OPENROUTER
+                DashboardCategory.WRITING -> APIProviderFactory.ProviderType.MISTRAL
+                DashboardCategory.SPEAKING -> APIProviderFactory.ProviderType.NEW_GROQ
+            }
+            
+            val messages = listOf(
+                mapOf("role" to "system", "content" to "You are a knowledgeable IELTS exam preparation assistant. Generate a unique and detailed explanation for an IELTS ${category.name.lowercase()} tip."),
+                mapOf("role" to "user", "content" to prompt)
+            )
+            
+            val chatCompletion = ChatCompletion(
+                messages = messages,
+                stream = true,
+                temperature = 0.8,
+                maxTokens = 200
+            )
+            
+            Log.d(TAG, "Sending request for single ${category.name} tip with provider ${providerType.name}")
+            val response = ApiService.getChatCompletion(chatCompletion, providerType)
+            val responseText = response.byteStream().bufferedReader().use { it.readText() }
+            Log.d(TAG, "Received response for single ${category.name} tip from ${providerType.name}")
+            
+            val content = extractContentFromResponse(responseText)
+            val parsedContent = parseSingleTip(content)
+            
+            if (parsedContent != null) {
+                Log.d(TAG, "Successfully parsed single tip for ${category.name}")
+                return@withContext parsedContent
+            } else {
+                Log.w(TAG, "Failed to parse single tip for ${category.name}, using fallback")
+                return@withContext fallbackContent(category)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error generating single tip for ${category.name}", e)
+            return@withContext fallbackContent(category)
+        }
+    }
+    
+    /**
      * Builds a personalized prompt for a specific IELTS category
      * @param category The IELTS category
      * @param preferences The user preferences
@@ -171,6 +226,37 @@ class AISearchQueryGenerator(
             User Profile:
             - ${category.name} problems: ${specificProblem}
             - Study goal: ${preferences.studyGoal}
+            
+            RESPONSE FORMAT:
+            Return exactly 1 pair in this format:
+            "{tip} || {detailed explanation}"
+            
+            RULES:
+            1. Tip should be 10-15 words
+            2. Explanation should be 50-100 words and provide actionable guidance
+            3. Use || to separate tip and explanation
+            4. Make this tip especially targeted to solve the user's specific ${category.name.lowercase()} problem
+        """.trimIndent()
+    }
+    
+    /**
+     * Builds a prompt with user input for a specific IELTS category
+     * @param category The IELTS category
+     * @param userInput The user's specific problem or issue
+     * @param timestamp The current timestamp
+     * @return The personalized prompt
+     */
+    private fun buildPromptWithUserInput(
+        category: DashboardCategory,
+        userInput: String,
+        timestamp: Long
+    ): String {
+        return """
+            Generate 1 NEW and UNIQUE IELTS ${category.name} study tip with detailed explanation (timestamp: $timestamp).
+            The tip should be concise and actionable, with a detailed explanation of how to implement it.
+            
+            User's ${category.name} Problem:
+            $userInput
             
             RESPONSE FORMAT:
             Return exactly 1 pair in this format:

@@ -7,6 +7,7 @@ import com.example.data.preferences.PreferencesManager
 import com.example.domain.GetDashboardItemsUseCase
 import com.example.domain.RefreshQueriesUseCase
 import com.example.presentation.viewModel.DashboardViewModel
+import com.example.presentation.viewModel.GetTipViewModel
 import com.example.presentation.viewModel.OnboardingViewModel
 import com.example.presentation.viewModel.SettingsViewModel
 import org.koin.android.ext.koin.androidContext
@@ -28,5 +29,6 @@ val appModule = module {
     viewModel { DashboardViewModel(get(), get()) }
     viewModel { OnboardingViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
+    viewModel { GetTipViewModel(get()) }
 }
 
