@@ -156,15 +156,20 @@ class AISearchQueryGenerator(
         preferences: UserPreferences, 
         timestamp: Long
     ): String {
-        val isWeakestSkill = preferences.weakestSkill.equals(category.name, ignoreCase = true)
+        // Get the specific problem for this category
+        val specificProblem = when (category) {
+            DashboardCategory.READING -> preferences.readingProblems
+            DashboardCategory.LISTENING -> preferences.listeningProblems
+            DashboardCategory.WRITING -> preferences.writingProblems
+            DashboardCategory.SPEAKING -> preferences.speakingProblems
+        }
         
         return """
             Generate 1 NEW and UNIQUE IELTS ${category.name} study tip with detailed explanation (timestamp: $timestamp).
             The tip should be concise and actionable, with a detailed explanation of how to implement it.
             
             User Profile:
-            - Weakest skill: ${preferences.weakestSkill}
-            - Target band score: ${preferences.targetBandScore}
+            - ${category.name} problems: ${specificProblem}
             - Study goal: ${preferences.studyGoal}
             
             RESPONSE FORMAT:
@@ -175,7 +180,7 @@ class AISearchQueryGenerator(
             1. Tip should be 10-15 words
             2. Explanation should be 50-100 words and provide actionable guidance
             3. Use || to separate tip and explanation
-            ${if (isWeakestSkill) "4. Make this tip especially targeted and specific since ${category.name} is the user's weakest skill" else ""}
+            4. Make this tip especially targeted to solve the user's specific ${category.name.lowercase()} problem
         """.trimIndent()
     }
     

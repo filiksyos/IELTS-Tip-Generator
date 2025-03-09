@@ -19,37 +19,71 @@
             android:text="Welcome to IELTS Preparation!"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- Reading problems input -->
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/weakestSkillLayout"
-            style="@style/Card.Input.Dropdown"
-            android:hint="What's your weakest IELTS skill?"
+            android:id="@+id/readingProblemsLayout"
+            style="@style/Card.Input"
+            android:hint="Reading problems"
             app:layout_constraintTop_toBottomOf="@id/welcomeText">
 
-            <AutoCompleteTextView
-                android:id="@+id/weakestSkillDropdown"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/readingProblemsInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none" />
+                android:inputType="text" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/targetScoreLabel"
-            style="@style/Card.Label"
-            android:text="Target band score"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/weakestSkillLayout" />
+        <!-- Listening problems input -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/listeningProblemsLayout"
+            style="@style/Card.Input"
+            android:hint="Listening problems"
+            app:layout_constraintTop_toBottomOf="@id/readingProblemsLayout">
 
-        <com.google.android.material.slider.Slider
-            android:id="@+id/targetScoreSlider"
-            style="@style/Card.Slider"
-            app:layout_constraintTop_toBottomOf="@id/targetScoreLabel" />
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/listeningProblemsInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Speaking problems input -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/speakingProblemsLayout"
+            style="@style/Card.Input"
+            android:hint="Speaking problems"
+            app:layout_constraintTop_toBottomOf="@id/listeningProblemsLayout">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/speakingProblemsInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Writing problems input -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/writingProblemsLayout"
+            style="@style/Card.Input"
+            android:hint="Writing problems"
+            app:layout_constraintTop_toBottomOf="@id/speakingProblemsLayout">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/writingProblemsInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+
+        </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/studyGoalLayout"
             style="@style/Card.Input"
             android:hint="What's your study goal?"
-            app:layout_constraintTop_toBottomOf="@id/targetScoreSlider">
+            app:layout_constraintTop_toBottomOf="@id/writingProblemsLayout">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/studyGoalInput"

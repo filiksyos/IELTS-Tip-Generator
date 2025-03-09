@@ -27,10 +27,16 @@ class MainActivity : AppCompatActivity() {
         bottomNav = findViewById(R.id.bottom_navigation)
         bottomNav.setupWithNavController(navController)
 
-        // Hide bottom navigation on onboarding screen
+        // Hide bottom navigation on onboarding screens
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
-                R.id.onboardingFragment -> bottomNav.visibility = View.GONE
+                R.id.onboardingFragment,
+                R.id.onboardingWelcomeFragment,
+                R.id.onboardingReadingFragment,
+                R.id.onboardingListeningFragment,
+                R.id.onboardingSpeakingFragment,
+                R.id.onboardingWritingFragment,
+                R.id.onboardingStudyGoalFragment -> bottomNav.visibility = View.GONE
                 else -> bottomNav.visibility = View.VISIBLE
             }
         }

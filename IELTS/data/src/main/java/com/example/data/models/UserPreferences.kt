@@ -1,8 +1,10 @@
 package com.example.data.models
 
 data class UserPreferences(
-    val weakestSkill: String = "",
-    val targetBandScore: Float = 0.0f,
+    val readingProblems: String = "",
+    val listeningProblems: String = "",
+    val writingProblems: String = "",
+    val speakingProblems: String = "",
     val focusAreas: List<String> = emptyList(),
     val studyGoal: String = "",
     val isFirstTime: Boolean = true
