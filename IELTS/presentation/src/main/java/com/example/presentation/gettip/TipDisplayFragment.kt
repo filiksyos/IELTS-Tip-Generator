@@ -23,7 +23,7 @@ class TipDisplayFragment : Fragment() {
     private val getTipViewModel: GetTipViewModel by sharedViewModel()
     private val savedTipsViewModel: SavedTipsViewModel by sharedViewModel()
     
-    private lateinit var categoryTitle: TextView
+    private lateinit var tipTitle: TextView
     private lateinit var tipText: TextView
     private lateinit var explanationText: TextView
     private lateinit var acceptButton: MaterialButton
@@ -58,7 +58,7 @@ class TipDisplayFragment : Fragment() {
 
     private fun setupViews(view: View) {
         Log.d(TAG, "Setting up views")
-        categoryTitle = view.findViewById(R.id.categoryTitle)
+        tipTitle = view.findViewById(R.id.tipTitle)
         tipText = view.findViewById(R.id.tipText)
         explanationText = view.findViewById(R.id.explanationText)
         acceptButton = view.findViewById(R.id.acceptButton)
@@ -67,7 +67,7 @@ class TipDisplayFragment : Fragment() {
         // Set category title
         val categoryName = getTipViewModel.getCategoryName()
         Log.d(TAG, "Setting category title: $categoryName")
-        categoryTitle.text = categoryName
+        tipTitle.text = categoryName
     }
     
     private fun observeViewModel() {
@@ -96,7 +96,7 @@ class TipDisplayFragment : Fragment() {
     
     private fun updateTipContent(content: IELTSContent) {
         Log.d(TAG, "Updating tip content: $content")
-        tipText.text = content.tip
+        tipText.text = "\"${content.tip}\""  // Add quotes around the tip
         explanationText.text = content.explanation
     }
 
@@ -107,7 +107,7 @@ class TipDisplayFragment : Fragment() {
             Log.e(TAG, "Accept button clicked")
             // Save the tip
             val category = getTipViewModel.selectedCategory.value
-            val tip = tipText.text.toString()
+            val tip = tipText.text.toString().trim('"')  // Remove quotes when saving
             val explanation = explanationText.text.toString()
             
             if (category != null && tip.isNotEmpty() && explanation.isNotEmpty()) {

@@ -18,7 +18,12 @@ class DashboardAdapter(
             binding.apply {
                 cardTitle.text = item.itemText
                 cardDescription.text = item.displayTip
-                root.setCardBackgroundColor(item.color)
+                
+                // Always apply the background color
+                item.color?.let { color ->
+                    root.setCardBackgroundColor(color)
+                }
+                
                 root.setOnClickListener { onItemClick(item) }
             }
         }

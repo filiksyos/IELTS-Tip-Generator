@@ -19,6 +19,9 @@ class ExplanationBottomSheetFragment : BottomSheetDialogFragment() {
             tipText = it.getString(ARG_TIP)
             explanationText = it.getString(ARG_EXPLANATION)
         }
+        
+        // Set the rounded corners style
+        setStyle(STYLE_NORMAL, R.style.BottomSheetDialogStyle)
     }
     
     override fun onCreateView(
@@ -32,7 +35,13 @@ class ExplanationBottomSheetFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
-        view.findViewById<TextView>(R.id.tipTextView).text = tipText
+        // Set the tip as the title
+        view.findViewById<TextView>(R.id.explanationTitle).text = tipText
+        
+        // Set the tip text with quotes (hidden since we're showing it as the title)
+        view.findViewById<TextView>(R.id.tipTextView).visibility = View.GONE
+        
+        // Set the explanation text
         view.findViewById<TextView>(R.id.explanationTextView).text = explanationText
     }
     

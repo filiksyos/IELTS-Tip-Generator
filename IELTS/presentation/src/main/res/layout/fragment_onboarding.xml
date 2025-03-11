@@ -1,104 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView 
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="24dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="4dp">
+    android:layout_height="match_parent"
+    android:padding="24dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="24dp">
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/welcomeText"
+        style="@style/Card.Title"
+        android:text="Welcome to IELTS Preparation!"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/welcomeText"
-            style="@style/Card.Title"
-            android:text="Welcome to IELTS Preparation!"
-            app:layout_constraintTop_toTopOf="parent" />
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/studyGoalLayout"
+        style="@style/Card.Input"
+        android:hint="What's your study goal?"
+        app:layout_constraintTop_toBottomOf="@id/welcomeText">
 
-        <!-- Reading problems input -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/readingProblemsLayout"
-            style="@style/Card.Input"
-            android:hint="Reading problems"
-            app:layout_constraintTop_toBottomOf="@id/welcomeText">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/studyGoalInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/readingProblemsInput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
 
-        </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/getStartedButton"
+        style="@style/Card.Button"
+        android:text="Get Started"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/studyGoalLayout" />
 
-        <!-- Listening problems input -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/listeningProblemsLayout"
-            style="@style/Card.Input"
-            android:hint="Listening problems"
-            app:layout_constraintTop_toBottomOf="@id/readingProblemsLayout">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/listeningProblemsInput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Speaking problems input -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/speakingProblemsLayout"
-            style="@style/Card.Input"
-            android:hint="Speaking problems"
-            app:layout_constraintTop_toBottomOf="@id/listeningProblemsLayout">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/speakingProblemsInput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Writing problems input -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/writingProblemsLayout"
-            style="@style/Card.Input"
-            android:hint="Writing problems"
-            app:layout_constraintTop_toBottomOf="@id/speakingProblemsLayout">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/writingProblemsInput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/studyGoalLayout"
-            style="@style/Card.Input"
-            android:hint="What's your study goal?"
-            app:layout_constraintTop_toBottomOf="@id/writingProblemsLayout">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/studyGoalInput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/getStartedButton"
-            style="@style/Card.Button"
-            android:text="Get Started"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/studyGoalLayout" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</com.google.android.material.card.MaterialCardView> 
+</androidx.constraintlayout.widget.ConstraintLayout> 

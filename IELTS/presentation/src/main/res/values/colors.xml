@@ -35,6 +35,8 @@
     <color name="divider">#E0E0E0</color>
 
     <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_300">#D4A5FF</color>
+    <color name="purple_400">#B12EEF</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
@@ -47,7 +49,6 @@
     <color name="blue_500">#2EABEF</color>
     <color name="blue_700">#2E7BEF</color>
     <color name="blue_50">#F0F9FF</color>
-    <color name="purple_400">#B12EEF</color>
     <color name="green_400">#30D855</color>
     <color name="pink_400">#E232A6</color>
     <color name="red_500">#FF3939</color>

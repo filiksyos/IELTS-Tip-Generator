@@ -21,14 +21,6 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 class OnboardingFragment : Fragment() {
     private val viewModel: OnboardingViewModel by viewModel()
     
-    private lateinit var readingProblemsLayout: TextInputLayout
-    private lateinit var readingProblemsInput: TextInputEditText
-    private lateinit var listeningProblemsLayout: TextInputLayout
-    private lateinit var listeningProblemsInput: TextInputEditText
-    private lateinit var speakingProblemsLayout: TextInputLayout
-    private lateinit var speakingProblemsInput: TextInputEditText
-    private lateinit var writingProblemsLayout: TextInputLayout
-    private lateinit var writingProblemsInput: TextInputEditText
     private lateinit var studyGoalLayout: TextInputLayout
     private lateinit var studyGoalInput: TextInputEditText
     private lateinit var getStartedButton: MaterialButton
@@ -49,14 +41,6 @@ class OnboardingFragment : Fragment() {
     }
 
     private fun setupViews(view: View) {
-        readingProblemsLayout = view.findViewById(R.id.readingProblemsLayout)
-        readingProblemsInput = view.findViewById(R.id.readingProblemsInput)
-        listeningProblemsLayout = view.findViewById(R.id.listeningProblemsLayout)
-        listeningProblemsInput = view.findViewById(R.id.listeningProblemsInput)
-        speakingProblemsLayout = view.findViewById(R.id.speakingProblemsLayout)
-        speakingProblemsInput = view.findViewById(R.id.speakingProblemsInput)
-        writingProblemsLayout = view.findViewById(R.id.writingProblemsLayout)
-        writingProblemsInput = view.findViewById(R.id.writingProblemsInput)
         studyGoalLayout = view.findViewById(R.id.studyGoalLayout)
         studyGoalInput = view.findViewById(R.id.studyGoalInput)
         getStartedButton = view.findViewById(R.id.getStartedButton)

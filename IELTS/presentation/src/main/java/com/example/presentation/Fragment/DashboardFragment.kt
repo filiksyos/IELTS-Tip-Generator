@@ -38,7 +38,7 @@ class DashboardFragment : Fragment() {
         observeViewModel()
         
         // Set title
-        binding.dashboardTitle.text = "Your Saved Tips"
+        binding.dashboardTitle.text = "My Library"
         
         // Disable swipe refresh functionality
         binding.swipeRefreshLayout.isEnabled = false
@@ -75,10 +75,18 @@ class DashboardFragment : Fragment() {
         
         // Convert SavedTip to DashboardItems for the adapter
         val dashboardItems = savedTips.map { savedTip ->
+            val cardColor = when (savedTip.category) {
+                DashboardCategory.READING -> resources.getColor(R.color.purple_200, null)
+                DashboardCategory.LISTENING -> resources.getColor(R.color.purple_300, null)
+                DashboardCategory.WRITING -> resources.getColor(R.color.purple_400, null)
+                DashboardCategory.SPEAKING -> resources.getColor(R.color.purple_500, null)
+                else -> resources.getColor(R.color.purple_700, null)
+            }
+            
             DashboardItems(
                 itemText = savedTip.category.title,
                 cardType = "Tip",
-                color = savedTip.category.color,
+                color = cardColor,
                 explanation = savedTip.explanation,
                 displayTip = savedTip.tip,
                 id = savedTip.id
