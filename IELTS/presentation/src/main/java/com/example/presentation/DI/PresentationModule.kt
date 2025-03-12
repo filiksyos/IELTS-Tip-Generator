@@ -35,6 +35,6 @@ val appModule = module {
     viewModel { OnboardingViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
     viewModel { GetTipViewModel(get()) }
-    viewModel { SavedTipsViewModel(get()) }
+    viewModel { params -> SavedTipsViewModel(get(), params.get()) }
 }
 

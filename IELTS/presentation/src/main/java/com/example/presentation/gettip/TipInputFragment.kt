@@ -6,11 +6,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.example.presentation.MainActivity
 import com.example.presentation.R
+import com.example.presentation.utils.NetworkUtils
+import com.example.presentation.utils.NoConnectionDialog
 import com.example.presentation.viewModel.GetTipViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -26,6 +30,9 @@ class TipInputFragment : Fragment() {
     private lateinit var problemInput: TextInputEditText
     private lateinit var generateButton: MaterialButton
     private lateinit var exampleText: TextView
+    private lateinit var loadingIndicator: ProgressBar
+    
+    private var noConnectionDialog: NoConnectionDialog? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -33,6 +40,8 @@ class TipInputFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         Log.e(TAG, "onCreateView")
+        // Hide bottom navigation when this fragment is created
+        (activity as? MainActivity)?.findViewById<View>(R.id.bottom_navigation)?.visibility = View.GONE
         return inflater.inflate(R.layout.fragment_tip_input, container, false)
     }
 
@@ -43,6 +52,7 @@ class TipInputFragment : Fragment() {
         setupViews(view)
         updateCategoryUI()
         setupClickListeners()
+        observeViewModel()
         
         // Check if a category is selected
         if (viewModel.selectedCategory.value == null) {
@@ -59,6 +69,7 @@ class TipInputFragment : Fragment() {
         problemInput = view.findViewById(R.id.problemInput)
         generateButton = view.findViewById(R.id.generateButton)
         exampleText = view.findViewById(R.id.exampleText)
+        loadingIndicator = view.findViewById(R.id.loadingIndicator)
     }
     
     private fun updateCategoryUI() {
@@ -82,6 +93,25 @@ class TipInputFragment : Fragment() {
         exampleText.text = exampleHint
         Log.d(TAG, "Set example hint: $exampleHint")
     }
+    
+    private fun observeViewModel() {
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            loadingIndicator.visibility = if (isLoading) View.VISIBLE else View.GONE
+            generateButton.isEnabled = !isLoading
+        }
+        
+        viewModel.networkError.observe(viewLifecycleOwner) { hasNetworkError ->
+            if (hasNetworkError) {
+                showNoConnectionDialog(false)
+            }
+        }
+        
+        viewModel.serverError.observe(viewLifecycleOwner) { hasServerError ->
+            if (hasServerError) {
+                showNoConnectionDialog(true)
+            }
+        }
+    }
 
     private fun setupClickListeners() {
         Log.d(TAG, "Setting up click listeners")
@@ -103,12 +133,35 @@ class TipInputFragment : Fragment() {
                 return@setOnClickListener
             }
             
+            // Check for internet connectivity
+            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+                Log.e(TAG, "No internet connection")
+                showNoConnectionDialog(false)
+                return@setOnClickListener
+            }
+            
             if (input.isNotEmpty()) {
                 Log.e(TAG, "User input is not empty: $input")
+                // Show loading state
+                loadingIndicator.visibility = View.VISIBLE
+                generateButton.isEnabled = false
+                
                 viewModel.setUserInput(input)
                 viewModel.generateTip()
-                Log.e(TAG, "Navigating to tip display fragment")
-                findNavController().navigate(R.id.action_tipInputFragment_to_tipDisplayFragment)
+                
+                // Observe loading state
+                viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+                    if (!isLoading) {
+                        loadingIndicator.visibility = View.GONE
+                        generateButton.isEnabled = true
+                        
+                        // Only navigate if there are no errors
+                        if (viewModel.networkError.value != true && viewModel.serverError.value != true) {
+                            Log.e(TAG, "Navigating to tip display fragment")
+                            findNavController().navigate(R.id.action_tipInputFragment_to_tipDisplayFragment)
+                        }
+                    }
+                }
             } else {
                 // Show error - input is empty
                 Log.e(TAG, "User input is empty")
@@ -116,4 +169,34 @@ class TipInputFragment : Fragment() {
             }
         }
     }
-} 
+    
+    private fun showNoConnectionDialog(isServerError: Boolean) {
+        noConnectionDialog?.dismiss()
+        
+        noConnectionDialog = NoConnectionDialog(
+            context = requireContext(),
+            isServerError = isServerError,
+            onRetryClick = {
+                val input = problemInput.text.toString().trim()
+                if (input.isNotEmpty() && NetworkUtils.isNetworkAvailable(requireContext())) {
+                    viewModel.resetErrorStates()
+                    viewModel.setUserInput(input)
+                    viewModel.generateTip()
+                } else if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+                    // Still no internet, show the dialog again
+                    showNoConnectionDialog(false)
+                }
+            }
+        )
+        
+        noConnectionDialog?.show()
+    }
+    
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // Show bottom navigation when leaving this fragment
+        (activity as? MainActivity)?.findViewById<View>(R.id.bottom_navigation)?.visibility = View.VISIBLE
+        noConnectionDialog?.dismiss()
+        noConnectionDialog = null
+    }
+}

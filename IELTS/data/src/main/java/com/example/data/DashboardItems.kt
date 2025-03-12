@@ -9,5 +9,6 @@ data class DashboardItems(
     val cardType: String,
     val color: Int? = null,
     val explanation: String,
-    val displayTip: String
+    val displayTip: String,
+    val isFavorite: Boolean = false
 )

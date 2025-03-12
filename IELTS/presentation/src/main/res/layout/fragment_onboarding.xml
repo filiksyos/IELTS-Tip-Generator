@@ -12,25 +12,11 @@
         android:text="Welcome to IELTS Preparation!"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/studyGoalLayout"
-        style="@style/Card.Input"
-        android:hint="What's your study goal?"
-        app:layout_constraintTop_toBottomOf="@id/welcomeText">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/studyGoalInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="text" />
-
-    </com.google.android.material.textfield.TextInputLayout>
-
     <com.google.android.material.button.MaterialButton
         android:id="@+id/getStartedButton"
         style="@style/Card.Button"
         android:text="Get Started"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/studyGoalLayout" />
+        app:layout_constraintTop_toBottomOf="@id/welcomeText" />
 
 </androidx.constraintlayout.widget.ConstraintLayout> 

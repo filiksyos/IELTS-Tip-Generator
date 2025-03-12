@@ -4,23 +4,31 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.data.DashboardCategory
 import com.example.data.DashboardItems
+import com.example.data.DailyCreditManager
 import com.example.data.models.SavedTip
 import com.example.presentation.R
 import com.example.presentation.adapter.DashboardAdapter
+import com.example.presentation.databinding.DialogCreditExhaustedBinding
 import com.example.presentation.databinding.FragmentDashboardBinding
 import com.example.presentation.viewModel.SavedTipsViewModel
-import org.koin.androidx.viewmodel.ext.android.viewModel
+import com.google.android.material.tabs.TabLayout
+import org.koin.androidx.viewmodel.ext.android.sharedViewModel
 
 class DashboardFragment : Fragment() {
     
-    private val savedTipsViewModel: SavedTipsViewModel by viewModel()
+    private val TAG = "DashboardFragment"
+    private val savedTipsViewModel: SavedTipsViewModel by sharedViewModel()
     private var _binding: FragmentDashboardBinding? = null
     private val binding get() = _binding!!
     private lateinit var adapter: DashboardAdapter
+    private var creditDialog: AlertDialog? = null
     
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -35,7 +43,10 @@ class DashboardFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         
         setupRecyclerView()
+        setupTabLayout()
+        setupSwipeToDelete()
         observeViewModel()
+        setupCreditDisplay()
         
         // Set title
         binding.dashboardTitle.text = "My Library"
@@ -45,10 +56,20 @@ class DashboardFragment : Fragment() {
     }
     
     private fun setupRecyclerView() {
-        adapter = DashboardAdapter { item ->
-            // Handle item click - show explanation
-            showExplanationBottomSheet(item)
-        }
+        adapter = DashboardAdapter(
+            onItemClick = { item ->
+                // Handle item click - show explanation
+                showExplanationBottomSheet(item)
+            },
+            onDeleteClick = { tipId ->
+                // Handle delete click
+                savedTipsViewModel.deleteTip(tipId)
+            },
+            onFavoriteToggle = { tipId ->
+                // Handle favorite toggle
+                savedTipsViewModel.toggleFavorite(tipId)
+            }
+        )
         
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(context)
@@ -56,45 +77,113 @@ class DashboardFragment : Fragment() {
         }
     }
     
+    private fun setupSwipeToDelete() {
+        val swipeHandler = object : ItemTouchHelper.SimpleCallback(
+            0,
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean = false
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                val item = adapter.currentList[position]
+                savedTipsViewModel.deleteTip(item.id)
+            }
+        }
+        
+        ItemTouchHelper(swipeHandler).attachToRecyclerView(binding.recyclerView)
+    }
+    
+    private fun setupTabLayout() {
+        binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                when (tab.position) {
+                    0 -> savedTipsViewModel.setShowingFavorites(false)
+                    1 -> savedTipsViewModel.setShowingFavorites(true)
+                }
+            }
+            
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
+    }
+    
     private fun observeViewModel() {
+        // Observe all tips
         savedTipsViewModel.savedTips.observe(viewLifecycleOwner) { savedTips ->
-            updateUI(savedTips)
+            if (!savedTipsViewModel.showingFavorites.value!!) {
+                updateUI(savedTips)
+            }
+        }
+        
+        // Observe favorite tips
+        savedTipsViewModel.favoriteTips.observe(viewLifecycleOwner) { favoriteTips ->
+            if (savedTipsViewModel.showingFavorites.value!!) {
+                updateUI(favoriteTips)
+            }
+        }
+        
+        // Observe showing favorites flag
+        savedTipsViewModel.showingFavorites.observe(viewLifecycleOwner) { showingFavorites ->
+            // Update the selected tab
+            binding.tabLayout.getTabAt(if (showingFavorites) 1 else 0)?.select()
+            
+            // Update the UI with the appropriate list
+            if (showingFavorites) {
+                updateUI(savedTipsViewModel.favoriteTips.value ?: emptyList())
+            } else {
+                updateUI(savedTipsViewModel.savedTips.value ?: emptyList())
+            }
         }
         
         // Load saved tips when fragment is created
         savedTipsViewModel.loadSavedTips()
+        savedTipsViewModel.loadFavoriteTips()
     }
     
     private fun updateUI(savedTips: List<SavedTip>) {
         if (savedTips.isEmpty()) {
             binding.emptyStateText.visibility = View.VISIBLE
-            binding.emptyStateText.text = "No saved tips yet. Go to 'Get Tips' to create some!"
+            binding.emptyStateText.text = if (savedTipsViewModel.showingFavorites.value!!) {
+                "No favorite tips yet. Add some tips to favorites!"
+            } else {
+                "No saved tips yet. Go to 'Get Tips' to create some!"
+            }
         } else {
             binding.emptyStateText.visibility = View.GONE
         }
         
         // Convert SavedTip to DashboardItems for the adapter
         val dashboardItems = savedTips.map { savedTip ->
-            val cardColor = when (savedTip.category) {
-                DashboardCategory.READING -> resources.getColor(R.color.purple_200, null)
-                DashboardCategory.LISTENING -> resources.getColor(R.color.purple_300, null)
-                DashboardCategory.WRITING -> resources.getColor(R.color.purple_400, null)
-                DashboardCategory.SPEAKING -> resources.getColor(R.color.purple_500, null)
-                else -> resources.getColor(R.color.purple_700, null)
-            }
-            
             DashboardItems(
+                id = savedTip.id,
                 itemText = savedTip.category.title,
                 cardType = "Tip",
-                color = cardColor,
+                color = if (savedTipsViewModel.isNewlyCreatedTip(savedTip.id)) 
+                    android.graphics.Color.parseColor("#A5D6A7") else null,
                 explanation = savedTip.explanation,
                 displayTip = savedTip.tip,
-                id = savedTip.id
+                isFavorite = savedTip.isFavorite
             )
         }
         
         // Submit list to adapter
         adapter.submitList(dashboardItems)
+        
+        // If this is a new tip, scroll to it
+        dashboardItems.find { it.color != null }?.let { newItem ->
+            val position = dashboardItems.indexOfFirst { it.id == newItem.id }
+            if (position != -1) {
+                binding.recyclerView.smoothScrollToPosition(position)
+                // Clear the creation tracking after we've handled it
+                savedTipsViewModel.clearNewTipTracking()
+            }
+        }
     }
     
     private fun showExplanationBottomSheet(item: DashboardItems) {
@@ -105,8 +194,48 @@ class DashboardFragment : Fragment() {
         bottomSheetFragment.show(childFragmentManager, bottomSheetFragment.tag)
     }
     
+    private fun setupCreditDisplay() {
+        // Set initial credit count
+        binding.creditCounter.text = DailyCreditManager.getCredits().toString()
+
+        // Set up credit change listener
+        DailyCreditManager.setCreditChangeListener { credits ->
+            binding.creditCounter.text = credits.toString()
+            
+            // Show dialog if credits are exhausted
+            if (credits == 0) {
+                showCreditExhaustedDialog()
+            }
+        }
+    }
+
+    private fun showCreditExhaustedDialog() {
+        // Dismiss any existing dialog
+        creditDialog?.dismiss()
+
+        // Inflate the custom dialog layout
+        val dialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_credit_exhausted, null)
+
+        // Create the dialog
+        creditDialog = AlertDialog.Builder(requireContext(), R.style.CustomDialogStyle)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        // Set up the OK button
+        dialogView.findViewById<View>(R.id.btnOk).setOnClickListener {
+            creditDialog?.dismiss()
+        }
+
+        // Show the dialog
+        creditDialog?.show()
+    }
+    
     override fun onDestroyView() {
         super.onDestroyView()
+        // Dismiss the dialog if it's showing
+        creditDialog?.dismiss()
         _binding = null
     }
 }

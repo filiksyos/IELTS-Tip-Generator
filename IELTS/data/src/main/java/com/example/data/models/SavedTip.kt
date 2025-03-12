@@ -11,5 +11,6 @@ data class SavedTip(
     val category: DashboardCategory,
     val tip: String,
     val explanation: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val isFavorite: Boolean = false
 ) 

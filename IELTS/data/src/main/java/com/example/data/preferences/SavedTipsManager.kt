@@ -58,6 +58,28 @@ class SavedTipsManager(context: Context) {
     }
 
     /**
+     * Toggle favorite status of a tip
+     */
+    fun toggleFavorite(tipId: String) {
+        val savedTips = getSavedTips().toMutableList()
+        val tipIndex = savedTips.indexOfFirst { it.id == tipId }
+        
+        if (tipIndex != -1) {
+            val tip = savedTips[tipIndex]
+            savedTips[tipIndex] = tip.copy(isFavorite = !tip.isFavorite)
+            val tipsJson = gson.toJson(savedTips)
+            sharedPreferences.edit().putString(KEY_SAVED_TIPS, tipsJson).apply()
+        }
+    }
+
+    /**
+     * Get all favorite tips
+     */
+    fun getFavoriteTips(): List<SavedTip> {
+        return getSavedTips().filter { it.isFavorite }
+    }
+
+    /**
      * Clear all saved tips
      */
     fun clearAllTips() {

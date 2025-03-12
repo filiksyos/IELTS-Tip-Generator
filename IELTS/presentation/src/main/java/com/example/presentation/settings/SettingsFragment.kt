@@ -4,22 +4,16 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.Fragment
-import com.example.data.models.UserPreferences
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.presentation.R
-import com.example.presentation.viewModel.SettingsViewModel
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
+import com.google.android.material.card.MaterialCardView
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class SettingsFragment : Fragment() {
-    private val viewModel: SettingsViewModel by viewModel()
-    
-    private lateinit var studyGoalLayout: TextInputLayout
-    private lateinit var studyGoalInput: TextInputEditText
-    private lateinit var saveButton: MaterialButton
+
+    private lateinit var recyclerView: RecyclerView
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -33,32 +27,42 @@ class SettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         
         setupViews(view)
-        setupButton()
-        loadCurrentPreferences()
+        setupRecyclerView()
     }
 
     private fun setupViews(view: View) {
-        studyGoalLayout = view.findViewById(R.id.studyGoalLayout)
-        studyGoalInput = view.findViewById(R.id.studyGoalInput)
-        saveButton = view.findViewById(R.id.saveButton)
+        recyclerView = view.findViewById(R.id.settingsRecyclerView)
     }
 
-    private fun loadCurrentPreferences() {
-        viewModel.getUserPreferences().let { preferences ->
-            // Set study goal
-            studyGoalInput.setText(preferences.studyGoal)
-        }
-    }
+    private fun setupRecyclerView() {
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        
+        // Add items directly to RecyclerView
+        val settingsItems = listOf(
+            Triple(R.drawable.ic_star, "Rate App") { /* Rate app functionality */ },
+            Triple(R.drawable.ic_share, "Share App") { /* Share app functionality */ },
+            Triple(R.drawable.ic_privacy, "Privacy Policy") { /* Privacy policy functionality */ }
+        )
 
-    private fun setupButton() {
-        saveButton.setOnClickListener {
-            val preferences = UserPreferences(
-                studyGoal = studyGoalInput.text.toString(),
-                isFirstTime = false
-            )
-            
-            viewModel.savePreferences(preferences)
-            Toast.makeText(context, "Settings saved", Toast.LENGTH_SHORT).show()
+        recyclerView.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+                val cardView = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.item_settings, parent, false) as MaterialCardView
+                return object : RecyclerView.ViewHolder(cardView) {}
+            }
+
+            override fun getItemCount() = settingsItems.size
+
+            override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+                val (iconRes, text, onClick) = settingsItems[position]
+                holder.itemView.findViewById<View>(R.id.settingsIcon).apply {
+                    this.setBackgroundResource(iconRes)
+                }
+                holder.itemView.findViewById<View>(R.id.settingsText).apply {
+                    (this as android.widget.TextView).text = text
+                }
+                holder.itemView.setOnClickListener { onClick() }
+            }
         }
     }
 } 

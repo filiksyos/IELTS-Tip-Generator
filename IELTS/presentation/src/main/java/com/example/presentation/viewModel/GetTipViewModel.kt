@@ -9,6 +9,9 @@ import com.example.data.DashboardCategory
 import com.example.data.RepositoryInterface
 import com.example.data.models.IELTSContent
 import kotlinx.coroutines.launch
+import java.io.IOException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 class GetTipViewModel(
     private val repository: RepositoryInterface
@@ -33,6 +36,14 @@ class GetTipViewModel(
     // Error state
     private val _error = MutableLiveData<String>()
     val error: LiveData<String> = _error
+    
+    // Network error state
+    private val _networkError = MutableLiveData<Boolean>()
+    val networkError: LiveData<Boolean> = _networkError
+    
+    // Server error state
+    private val _serverError = MutableLiveData<Boolean>()
+    val serverError: LiveData<Boolean> = _serverError
     
     init {
         Log.e(TAG, "GetTipViewModel initialized")
@@ -64,6 +75,10 @@ class GetTipViewModel(
         
         Log.e(TAG, "GENERATING TIP for category: $category with input: $userInput")
         _isLoading.value = true
+        // Reset error states
+        _networkError.value = false
+        _serverError.value = false
+        _error.value = ""
         
         viewModelScope.launch {
             try {
@@ -75,10 +90,30 @@ class GetTipViewModel(
                 _isLoading.postValue(false)
             } catch (e: Exception) {
                 Log.e(TAG, "Error generating tip: ${e.message}", e)
+                
+                when (e) {
+                    // Network-related exceptions
+                    is IOException, is SocketTimeoutException, is UnknownHostException -> {
+                        Log.e(TAG, "Network error: ${e.message}")
+                        _networkError.postValue(true)
+                    }
+                    // Server-related or other exceptions
+                    else -> {
+                        Log.e(TAG, "Server error: ${e.message}")
+                        _serverError.postValue(true)
+                    }
+                }
+                
                 _error.postValue("Failed to generate tip: ${e.message}")
                 _isLoading.postValue(false)
             }
         }
+    }
+    
+    fun resetErrorStates() {
+        _networkError.value = false
+        _serverError.value = false
+        _error.value = ""
     }
     
     fun getCategoryName(): String {

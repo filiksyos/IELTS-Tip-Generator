@@ -32,10 +32,10 @@
     </style>
     <!-- ... other themes ... -->
 
-    <style name="Theme.IELTS_PREPARATION_APP.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/white</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/app_icon</item>
-        <item name="postSplashScreenTheme">@style/Theme.IELTS_PREPARATION_APP</item>
+    <style name="Theme.IELTS_PREPARATION_APP.Starting" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/white</item>
+        <item name="android:statusBarColor">@color/primary</item>
+        <item name="android:windowFullscreen">false</item>
     </style>
 
     <!-- Typography styles -->
