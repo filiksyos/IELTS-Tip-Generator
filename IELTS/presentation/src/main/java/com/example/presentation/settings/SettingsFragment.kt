@@ -39,9 +39,9 @@ class SettingsFragment : Fragment() {
         
         // Add items directly to RecyclerView
         val settingsItems = listOf(
-            Triple(R.drawable.ic_star, "Rate App") { /* Rate app functionality */ },
-            Triple(R.drawable.ic_share, "Share App") { /* Share app functionality */ },
-            Triple(R.drawable.ic_privacy, "Privacy Policy") { /* Privacy policy functionality */ }
+            Triple(R.xml.ic_star, "Rate App") { /* Rate app functionality */ },
+            Triple(R.xml.ic_share, "Share App") { /* Share app functionality */ },
+            Triple(R.xml.ic_privacy, "Privacy Policy") { /* Privacy policy functionality */ }
         )
 
         recyclerView.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {

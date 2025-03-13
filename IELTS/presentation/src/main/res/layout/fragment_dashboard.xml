@@ -21,7 +21,7 @@
         android:id="@+id/creditIcon"
         android:layout_width="24dp"
         android:layout_height="24dp"
-        android:src="@drawable/ic_credit"
+        android:src="@xml/ic_credit"
         android:layout_marginStart="8dp"
         app:layout_constraintStart_toEndOf="@id/dashboardTitle"
         app:layout_constraintTop_toTopOf="@id/dashboardTitle"

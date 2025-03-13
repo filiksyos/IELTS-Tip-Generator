@@ -59,7 +59,7 @@
                     android:layout_height="48dp"
                     android:background="@drawable/circle_background_blue"
                     android:padding="12dp"
-                    android:src="@drawable/ic_reading"
+                    android:src="@xml/ic_reading"
                     android:contentDescription="Reading icon" />
 
                 <TextView
@@ -96,7 +96,7 @@
                     android:layout_height="48dp"
                     android:background="@drawable/circle_background_blue"
                     android:padding="12dp"
-                    android:src="@drawable/ic_listening"
+                    android:src="@xml/ic_listening"
                     android:contentDescription="Listening icon" />
 
                 <TextView
@@ -133,7 +133,7 @@
                     android:layout_height="48dp"
                     android:background="@drawable/circle_background_blue"
                     android:padding="12dp"
-                    android:src="@drawable/ic_writing"
+                    android:src="@xml/ic_writing"
                     android:contentDescription="Writing icon" />
 
                 <TextView
@@ -170,7 +170,7 @@
                     android:layout_height="48dp"
                     android:background="@drawable/circle_background_blue"
                     android:padding="12dp"
-                    android:src="@drawable/ic_speaking"
+                    android:src="@xml/ic_speaking"
                     android:contentDescription="Speaking icon" />
 
                 <TextView

@@ -11,11 +11,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.data.DashboardCategory
 import com.example.data.DashboardItems
-import com.example.data.DailyCreditManager
 import com.example.data.models.SavedTip
 import com.example.presentation.R
 import com.example.presentation.adapter.DashboardAdapter
-import com.example.presentation.databinding.DialogCreditExhaustedBinding
 import com.example.presentation.databinding.FragmentDashboardBinding
 import com.example.presentation.viewModel.SavedTipsViewModel
 import com.google.android.material.tabs.TabLayout
@@ -28,8 +26,7 @@ class DashboardFragment : Fragment() {
     private var _binding: FragmentDashboardBinding? = null
     private val binding get() = _binding!!
     private lateinit var adapter: DashboardAdapter
-    private var creditDialog: AlertDialog? = null
-    
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -46,8 +43,7 @@ class DashboardFragment : Fragment() {
         setupTabLayout()
         setupSwipeToDelete()
         observeViewModel()
-        setupCreditDisplay()
-        
+
         // Set title
         binding.dashboardTitle.text = "My Library"
         
@@ -194,48 +190,9 @@ class DashboardFragment : Fragment() {
         bottomSheetFragment.show(childFragmentManager, bottomSheetFragment.tag)
     }
     
-    private fun setupCreditDisplay() {
-        // Set initial credit count
-        binding.creditCounter.text = DailyCreditManager.getCredits().toString()
 
-        // Set up credit change listener
-        DailyCreditManager.setCreditChangeListener { credits ->
-            binding.creditCounter.text = credits.toString()
-            
-            // Show dialog if credits are exhausted
-            if (credits == 0) {
-                showCreditExhaustedDialog()
-            }
-        }
-    }
-
-    private fun showCreditExhaustedDialog() {
-        // Dismiss any existing dialog
-        creditDialog?.dismiss()
-
-        // Inflate the custom dialog layout
-        val dialogView = LayoutInflater.from(requireContext())
-            .inflate(R.layout.dialog_credit_exhausted, null)
-
-        // Create the dialog
-        creditDialog = AlertDialog.Builder(requireContext(), R.style.CustomDialogStyle)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-
-        // Set up the OK button
-        dialogView.findViewById<View>(R.id.btnOk).setOnClickListener {
-            creditDialog?.dismiss()
-        }
-
-        // Show the dialog
-        creditDialog?.show()
-    }
-    
     override fun onDestroyView() {
         super.onDestroyView()
-        // Dismiss the dialog if it's showing
-        creditDialog?.dismiss()
         _binding = null
     }
 }

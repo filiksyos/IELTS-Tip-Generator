@@ -48,8 +48,8 @@ class DashboardAdapter(
                 
                 // Set favorite icon based on item's favorite status
                 favoriteIcon.setImageResource(
-                    if (item.isFavorite) R.drawable.ic_favorite
-                    else R.drawable.ic_favorite_border
+                    if (item.isFavorite) R.xml.ic_favorite
+                    else R.xml.ic_favorite_border
                 )
                 
                 // Handle background color and animation

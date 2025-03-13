@@ -17,7 +17,7 @@
             android:layout_width="64dp"
             android:layout_height="64dp"
             android:layout_marginTop="16dp"
-            android:src="@drawable/ic_no_connection"
+            android:src="@xml/ic_no_connection"
             android:contentDescription="No connection icon"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
