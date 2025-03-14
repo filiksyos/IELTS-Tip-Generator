@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -29,7 +28,6 @@ class DashboardFragment : Fragment() {
     private var _binding: FragmentDashboardBinding? = null
     private val binding get() = _binding!!
     private lateinit var adapter: DashboardAdapter
-    private var creditAlertDialog: AlertDialog? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -141,14 +139,9 @@ class DashboardFragment : Fragment() {
             }
         }
         
-        // Observe remaining credits
+        // Observe remaining credits - just update the counter, don't show dialog
         dashboardViewModel.remainingCredits.observe(viewLifecycleOwner) { credits ->
             binding.creditCounter.text = credits.toString()
-            
-            // Show dialog if credits are depleted (0)
-            if (credits <= 0) {
-                showNoCreditDialog()
-            }
         }
         
         // Load saved tips when fragment is created
@@ -204,34 +197,8 @@ class DashboardFragment : Fragment() {
         bottomSheetFragment.show(childFragmentManager, bottomSheetFragment.tag)
     }
     
-    private fun showNoCreditDialog() {
-        // Dismiss existing dialog if any
-        creditAlertDialog?.dismiss()
-        
-        val dialogView = LayoutInflater.from(requireContext())
-            .inflate(R.layout.dialog_credit_exhausted, null)
-        
-        val dialog = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-            
-        // Ensure dialog appears in center
-        dialog.window?.setGravity(android.view.Gravity.CENTER)
-        
-        // Set click listener for the OK button
-        dialogView.findViewById<View>(R.id.btnOk).setOnClickListener {
-            dialog.dismiss()
-        }
-        
-        creditAlertDialog = dialog
-        dialog.show()
-    }
-    
     override fun onDestroyView() {
         super.onDestroyView()
-        creditAlertDialog?.dismiss()
-        creditAlertDialog = null
         _binding = null
     }
 }

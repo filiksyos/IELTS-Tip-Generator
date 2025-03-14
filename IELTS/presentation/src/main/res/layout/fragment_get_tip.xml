@@ -27,13 +27,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/greetingText" />
 
-    <GridLayout
+    <!-- Replace GridLayout with ConstraintLayout for better control -->
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/optionsGrid"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:columnCount="2"
-        android:rowCount="2"
         app:layout_constraintTop_toBottomOf="@id/titleText">
 
         <!-- Reading Option -->
@@ -41,11 +40,13 @@
             android:id="@+id/readingOption"
             android:layout_width="0dp"
             android:layout_height="150dp"
-            android:layout_rowWeight="1"
-            android:layout_columnWeight="1"
             android:layout_margin="8dp"
             app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            app:cardElevation="4dp"
+            app:layout_constraintEnd_toStartOf="@+id/listeningOption"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="0.45">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -78,11 +79,13 @@
             android:id="@+id/listeningOption"
             android:layout_width="0dp"
             android:layout_height="150dp"
-            android:layout_rowWeight="1"
-            android:layout_columnWeight="1"
             android:layout_margin="8dp"
             app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            app:cardElevation="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/readingOption"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="0.45">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -115,11 +118,13 @@
             android:id="@+id/writingOption"
             android:layout_width="0dp"
             android:layout_height="150dp"
-            android:layout_rowWeight="1"
-            android:layout_columnWeight="1"
             android:layout_margin="8dp"
             app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            app:cardElevation="4dp"
+            app:layout_constraintEnd_toStartOf="@+id/speakingOption"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/readingOption"
+            app:layout_constraintWidth_percent="0.45">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -152,11 +157,13 @@
             android:id="@+id/speakingOption"
             android:layout_width="0dp"
             android:layout_height="150dp"
-            android:layout_rowWeight="1"
-            android:layout_columnWeight="1"
             android:layout_margin="8dp"
             app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            app:cardElevation="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/writingOption"
+            app:layout_constraintTop_toBottomOf="@+id/listeningOption"
+            app:layout_constraintWidth_percent="0.45">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -183,6 +190,6 @@
                     android:textStyle="bold" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
-    </GridLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout> 

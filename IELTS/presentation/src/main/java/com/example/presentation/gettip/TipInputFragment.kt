@@ -71,7 +71,7 @@ class TipInputFragment : Fragment() {
         
         // Set category label based on selected category
         viewModel.selectedCategory.value?.let { category ->
-            categoryLabel.text = "What's your ${category.name.lowercase()} issue?"
+            categoryLabel.text = category.name
             
             // Set example text based on category
             val examplePrompt = when (category) {
