@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.DashboardItems
+import com.example.data.RepositoryInterface
 import com.example.domain.DashboardCategoryType
 import com.example.domain.GetDashboardItemsUseCase
 import com.example.domain.DashboardItemsObserverUseCase
@@ -13,11 +14,16 @@ import kotlinx.coroutines.launch
 
 class DashboardViewModel(
     private val getDashboardItemsUseCase: GetDashboardItemsUseCase,
-    private val dashboardItemsObserverUseCase: DashboardItemsObserverUseCase
+    private val dashboardItemsObserverUseCase: DashboardItemsObserverUseCase,
+    private val repository: RepositoryInterface
 ) : ViewModel() {
 
     private val _dashboardItems = MutableLiveData<Map<DashboardCategoryType, List<DashboardItems>>>()
     val dashboardItems: LiveData<Map<DashboardCategoryType, List<DashboardItems>>> get() = _dashboardItems
+    
+    // Remaining credits
+    private val _remainingCredits = MutableLiveData<Int>()
+    val remainingCredits: LiveData<Int> get() = _remainingCredits
 
     init {
         // Observe the repository's StateFlow through the use case
@@ -34,6 +40,13 @@ class DashboardViewModel(
                     categoryType to items
                 }
                 _dashboardItems.postValue(convertedMap)
+            }
+        }
+        
+        // Observe remaining credits
+        viewModelScope.launch {
+            repository.remainingCreditsFlow.collectLatest { credits ->
+                _remainingCredits.postValue(credits)
             }
         }
     }

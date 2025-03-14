@@ -45,75 +45,114 @@ class GetTipViewModel(
     private val _serverError = MutableLiveData<Boolean>()
     val serverError: LiveData<Boolean> = _serverError
     
+    // Credit exhausted state
+    private val _creditExhausted = MutableLiveData<Boolean>()
+    val creditExhausted: LiveData<Boolean> = _creditExhausted
+    
+    // Remaining credits
+    private val _remainingCredits = MutableLiveData<Int>()
+    val remainingCredits: LiveData<Int> = _remainingCredits
+    
     init {
         Log.e(TAG, "GetTipViewModel initialized")
+        updateRemainingCredits()
     }
     
+    /**
+     * Set the selected category
+     */
     fun setSelectedCategory(category: DashboardCategory) {
-        Log.e(TAG, "Setting selected category: $category")
         _selectedCategory.value = category
+        // Clear the previously generated tip when selecting a new category
+        clearGeneratedTip()
     }
     
+    /**
+     * Set the user input
+     */
     fun setUserInput(input: String) {
-        Log.e(TAG, "Setting user input: $input")
         userInput = input
     }
     
+    /**
+     * Clear the generated tip
+     */
+    fun clearGeneratedTip() {
+        _generatedTip.value = null
+    }
+    
+    /**
+     * Generate a tip for the selected category
+     */
     fun generateTip() {
-        val category = _selectedCategory.value
-        if (category == null) {
-            Log.e(TAG, "Cannot generate tip: No category selected")
-            _error.value = "Please select a category first"
-            return
-        }
+        val category = _selectedCategory.value ?: return
         
         if (userInput.isBlank()) {
-            Log.e(TAG, "Cannot generate tip: User input is blank")
-            _error.value = "Please enter your specific issue"
+            _error.value = "Please enter a specific issue or question"
             return
         }
         
-        Log.e(TAG, "GENERATING TIP for category: $category with input: $userInput")
         _isLoading.value = true
-        // Reset error states
         _networkError.value = false
         _serverError.value = false
-        _error.value = ""
+        _creditExhausted.value = false
         
         viewModelScope.launch {
             try {
-                // Generate a tip for the selected category using the user input
-                Log.e(TAG, "Calling repository.generateTipForCategory")
-                val tip = repository.generateTipForCategory(category, userInput)
-                Log.e(TAG, "Received tip from repository: $tip")
-                _generatedTip.postValue(tip)
-                _isLoading.postValue(false)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error generating tip: ${e.message}", e)
+                val result = repository.generateTipForCategory(category, userInput)
                 
-                when (e) {
-                    // Network-related exceptions
-                    is IOException, is SocketTimeoutException, is UnknownHostException -> {
-                        Log.e(TAG, "Network error: ${e.message}")
-                        _networkError.postValue(true)
-                    }
-                    // Server-related or other exceptions
-                    else -> {
-                        Log.e(TAG, "Server error: ${e.message}")
-                        _serverError.postValue(true)
-                    }
+                // Check if this is a credit exhausted response
+                if (result.tip == "Daily credit limit reached.") {
+                    _creditExhausted.postValue(true)
+                } else {
+                    _generatedTip.postValue(result)
                 }
                 
-                _error.postValue("Failed to generate tip: ${e.message}")
+                // Update remaining credits
+                updateRemainingCredits()
+            } catch (e: Exception) {
+                handleError(e)
+            } finally {
                 _isLoading.postValue(false)
             }
         }
     }
     
+    /**
+     * Update remaining credits
+     */
+    private fun updateRemainingCredits() {
+        viewModelScope.launch {
+            repository.remainingCreditsFlow.collect { credits ->
+                _remainingCredits.postValue(credits)
+            }
+        }
+    }
+    
+    /**
+     * Handle errors during tip generation
+     */
+    private fun handleError(e: Exception) {
+        when (e) {
+            is IOException, is SocketTimeoutException, is UnknownHostException -> {
+                _networkError.postValue(true)
+                Log.e(TAG, "Network error: ${e.message}", e)
+            }
+            else -> {
+                _serverError.postValue(true)
+                Log.e(TAG, "Server error: ${e.message}", e)
+            }
+        }
+    }
+    
+    /**
+     * Reset error states
+     */
     fun resetErrorStates() {
+        _error.value = ""
         _networkError.value = false
         _serverError.value = false
-        _error.value = ""
+        _creditExhausted.value = false
     }
     
     fun getCategoryName(): String {

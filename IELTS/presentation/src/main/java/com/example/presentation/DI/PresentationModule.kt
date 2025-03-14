@@ -3,6 +3,7 @@ package com.example.presentation.DI
 import android.content.Context
 import com.example.data.Repository
 import com.example.data.RepositoryInterface
+import com.example.data.preferences.CreditManager
 import com.example.data.preferences.PreferencesManager
 import com.example.data.preferences.SavedTipsManager
 import com.example.domain.GetDashboardItemsUseCase
@@ -22,16 +23,19 @@ val appModule = module {
     
     // Saved Tips Manager
     single { SavedTipsManager(androidContext()) }
+    
+    // Credit Manager
+    single { CreditManager(androidContext()) }
 
     // Repository binding
-    single<RepositoryInterface> { Repository(get()) }
+    single<RepositoryInterface> { Repository(get(), get()) }
 
     // UseCases
     factory { GetDashboardItemsUseCase(get()) }
     factory { DashboardItemsObserverUseCase(get()) }
 
     // ViewModels
-    viewModel { DashboardViewModel(get(), get()) }
+    viewModel { DashboardViewModel(get(), get(), get()) }
     viewModel { OnboardingViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
     viewModel { GetTipViewModel(get()) }

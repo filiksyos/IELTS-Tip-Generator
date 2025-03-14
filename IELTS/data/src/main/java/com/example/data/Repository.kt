@@ -3,6 +3,7 @@ package com.example.data
 import android.util.Log
 import com.example.data.ai.AISearchQueryGenerator
 import com.example.data.models.IELTSContent
+import com.example.data.preferences.CreditManager
 import com.example.data.preferences.PreferencesManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,7 +11,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class Repository(
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val creditManager: CreditManager
 ) : RepositoryInterface {
     private val TAG = "IELTS_Repository"
     private val queryGenerator = AISearchQueryGenerator(preferencesManager)
@@ -21,11 +23,16 @@ class Repository(
     override val dashboardItemsFlow: StateFlow<Map<DashboardCategory, List<DashboardItems>>> =
         _dashboardItemsFlow
 
+    // StateFlow to hold the remaining credits
+    private val _remainingCreditsFlow = MutableStateFlow(creditManager.getRemainingCredits())
+    override val remainingCreditsFlow: StateFlow<Int> = _remainingCreditsFlow
+
     // No automatic initialization of queries
     init {
         // Initialize with empty data
         Log.d(TAG, "Repository initialized")
         setDefaultItems()
+        updateRemainingCredits()
     }
     
     /**
@@ -38,6 +45,16 @@ class Repository(
     ): IELTSContent = withContext(Dispatchers.IO) {
         try {
             Log.e(TAG, "STARTING TIP GENERATION: category=$category, input=$userInput")
+            
+            // Check if we have credits available
+            if (!creditManager.useCredit()) {
+                Log.e(TAG, "No credits remaining, cannot generate tip")
+                updateRemainingCredits()
+                return@withContext noCreditContent(category)
+            }
+            
+            // Update remaining credits after using one
+            updateRemainingCredits()
             
             // Validate input
             if (userInput.isBlank()) {
@@ -64,6 +81,13 @@ class Repository(
     }
     
     /**
+     * Update the remaining credits flow
+     */
+    private fun updateRemainingCredits() {
+        _remainingCreditsFlow.value = creditManager.getRemainingCredits()
+    }
+    
+    /**
      * Set default empty items for all categories
      */
     private fun setDefaultItems() {
@@ -80,6 +104,17 @@ class Repository(
         return IELTSContent(
             tip = "Tip generation failed. Please try again.",
             explanation = "We couldn't generate a tip for ${category.name.lowercase()} at this time. Please check your internet connection and try again."
+        )
+    }
+    
+    /**
+     * No credit content when daily limit is reached
+     */
+    private fun noCreditContent(category: DashboardCategory): IELTSContent {
+        Log.e(TAG, "NO CREDITS REMAINING for category: $category")
+        return IELTSContent(
+            tip = "Daily credit limit reached.",
+            explanation = "You've reached your daily limit for generating tips. Please try again tomorrow when your credits will be reset."
         )
     }
     

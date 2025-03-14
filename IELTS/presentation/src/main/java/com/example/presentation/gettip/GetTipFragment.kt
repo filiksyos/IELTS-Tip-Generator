@@ -36,6 +36,9 @@ class GetTipFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         Log.e(TAG, "onViewCreated")
         
+        // Clear any previously generated tip when this fragment is shown
+        viewModel.clearGeneratedTip()
+        
         setupViews(view)
         setupClickListeners()
     }

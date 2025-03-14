@@ -8,6 +8,11 @@ interface RepositoryInterface {
      * StateFlow to observe dashboard items
      */
     val dashboardItemsFlow: StateFlow<Map<DashboardCategory, List<DashboardItems>>>
+    
+    /**
+     * StateFlow to observe remaining daily credits
+     */
+    val remainingCreditsFlow: StateFlow<Int>
 
     /**
      * Generates a tip for a specific category using the provided user input

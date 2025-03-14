@@ -9,6 +9,7 @@ import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.example.presentation.MainActivity
@@ -31,8 +32,10 @@ class TipInputFragment : Fragment() {
     private lateinit var generateButton: MaterialButton
     private lateinit var exampleText: TextView
     private lateinit var loadingIndicator: ProgressBar
+    private lateinit var creditCounter: TextView
     
     private var noConnectionDialog: NoConnectionDialog? = null
+    private var creditExhaustedDialog: AlertDialog? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -49,49 +52,58 @@ class TipInputFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         Log.e(TAG, "onViewCreated")
         
-        setupViews(view)
-        updateCategoryUI()
-        setupClickListeners()
-        observeViewModel()
+        // Make sure we don't have a previously generated tip
+        viewModel.clearGeneratedTip()
         
-        // Check if a category is selected
-        if (viewModel.selectedCategory.value == null) {
-            Log.e(TAG, "No category selected, navigating back")
-            Toast.makeText(context, "Please select a category first", Toast.LENGTH_SHORT).show()
-            findNavController().navigateUp()
-        }
+        initViews(view)
+        setupListeners()
+        observeViewModel()
     }
-
-    private fun setupViews(view: View) {
-        Log.d(TAG, "Setting up views")
+    
+    private fun initViews(view: View) {
         backButton = view.findViewById(R.id.backButton)
         categoryLabel = view.findViewById(R.id.categoryLabel)
         problemInput = view.findViewById(R.id.problemInput)
         generateButton = view.findViewById(R.id.generateButton)
         exampleText = view.findViewById(R.id.exampleText)
         loadingIndicator = view.findViewById(R.id.loadingIndicator)
+        creditCounter = view.findViewById(R.id.creditCounter)
+        
+        // Set category label based on selected category
+        viewModel.selectedCategory.value?.let { category ->
+            categoryLabel.text = "What's your ${category.name.lowercase()} issue?"
+            
+            // Set example text based on category
+            val examplePrompt = when (category) {
+                com.example.data.DashboardCategory.READING -> "e.g., I struggle with understanding academic texts quickly"
+                com.example.data.DashboardCategory.LISTENING -> "e.g., I have trouble following fast conversations"
+                com.example.data.DashboardCategory.WRITING -> "e.g., I need help with essay structure"
+                com.example.data.DashboardCategory.SPEAKING -> "e.g., I get nervous during the speaking test"
+            }
+            exampleText.text = examplePrompt
+        }
     }
     
-    private fun updateCategoryUI() {
-        val categoryName = viewModel.getCategoryName()
-        Log.d(TAG, "Updating category UI for: $categoryName")
-        categoryLabel.text = categoryName
-        
-        // Update example text based on category
-        val exampleHint = when (viewModel.selectedCategory.value) {
-            com.example.data.DashboardCategory.READING -> 
-                "Example: I struggle with understanding complex passages and run out of time"
-            com.example.data.DashboardCategory.LISTENING -> 
-                "Example: I have trouble understanding different accents and fast speech"
-            com.example.data.DashboardCategory.WRITING -> 
-                "Example: I find it difficult to organize my ideas and use appropriate vocabulary"
-            com.example.data.DashboardCategory.SPEAKING -> 
-                "Example: I get nervous during speaking tests and struggle with fluency"
-            else -> ""
+    private fun setupListeners() {
+        backButton.setOnClickListener {
+            findNavController().navigateUp()
         }
         
-        exampleText.text = exampleHint
-        Log.d(TAG, "Set example hint: $exampleHint")
+        generateButton.setOnClickListener {
+            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+                showNoConnectionDialog()
+                return@setOnClickListener
+            }
+            
+            val userInput = problemInput.text.toString().trim()
+            if (userInput.isBlank()) {
+                Toast.makeText(requireContext(), "Please describe your issue", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            viewModel.setUserInput(userInput)
+            viewModel.generateTip()
+        }
     }
     
     private fun observeViewModel() {
@@ -100,91 +112,59 @@ class TipInputFragment : Fragment() {
             generateButton.isEnabled = !isLoading
         }
         
-        viewModel.networkError.observe(viewLifecycleOwner) { hasNetworkError ->
-            if (hasNetworkError) {
-                showNoConnectionDialog(false)
+        viewModel.error.observe(viewLifecycleOwner) { error ->
+            if (error.isNotEmpty()) {
+                Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
             }
         }
         
-        viewModel.serverError.observe(viewLifecycleOwner) { hasServerError ->
-            if (hasServerError) {
-                showNoConnectionDialog(true)
+        viewModel.networkError.observe(viewLifecycleOwner) { hasError ->
+            if (hasError) {
+                showNoConnectionDialog()
             }
         }
-    }
-
-    private fun setupClickListeners() {
-        Log.d(TAG, "Setting up click listeners")
         
-        backButton.setOnClickListener {
-            Log.d(TAG, "Back button clicked")
-            findNavController().navigateUp()
+        viewModel.serverError.observe(viewLifecycleOwner) { hasError ->
+            if (hasError) {
+                Toast.makeText(
+                    requireContext(),
+                    "Server error. Please try again later.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
         
-        generateButton.setOnClickListener {
-            Log.e(TAG, "Generate button clicked")
-            val input = problemInput.text.toString().trim()
-            
-            // Check if a category is selected
-            if (viewModel.selectedCategory.value == null) {
-                Log.e(TAG, "Cannot generate tip: No category selected")
-                Toast.makeText(context, "Please select a category first", Toast.LENGTH_SHORT).show()
-                findNavController().navigateUp()
-                return@setOnClickListener
+        viewModel.creditExhausted.observe(viewLifecycleOwner) { isExhausted ->
+            if (isExhausted) {
+                showCreditExhaustedDialog()
             }
-            
-            // Check for internet connectivity
-            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                Log.e(TAG, "No internet connection")
-                showNoConnectionDialog(false)
-                return@setOnClickListener
-            }
-            
-            if (input.isNotEmpty()) {
-                Log.e(TAG, "User input is not empty: $input")
-                // Show loading state
-                loadingIndicator.visibility = View.VISIBLE
-                generateButton.isEnabled = false
-                
-                viewModel.setUserInput(input)
-                viewModel.generateTip()
-                
-                // Observe loading state
-                viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-                    if (!isLoading) {
-                        loadingIndicator.visibility = View.GONE
-                        generateButton.isEnabled = true
-                        
-                        // Only navigate if there are no errors
-                        if (viewModel.networkError.value != true && viewModel.serverError.value != true) {
-                            Log.e(TAG, "Navigating to tip display fragment")
-                            findNavController().navigate(R.id.action_tipInputFragment_to_tipDisplayFragment)
-                        }
-                    }
-                }
-            } else {
-                // Show error - input is empty
-                Log.e(TAG, "User input is empty")
-                problemInput.error = "Please describe your issue"
+        }
+        
+        viewModel.remainingCredits.observe(viewLifecycleOwner) { credits ->
+            creditCounter.text = credits.toString()
+        }
+        
+        viewModel.generatedTip.observe(viewLifecycleOwner) { tip ->
+            if (tip != null && tip.tip.isNotBlank()) {
+                findNavController().navigate(R.id.action_tipInputFragment_to_tipDisplayFragment)
             }
         }
     }
     
-    private fun showNoConnectionDialog(isServerError: Boolean) {
+    private fun showNoConnectionDialog() {
+        // Dismiss existing dialog if any
         noConnectionDialog?.dismiss()
         
+        // Create a new dialog with retry action
         noConnectionDialog = NoConnectionDialog(
             context = requireContext(),
-            isServerError = isServerError,
+            isServerError = false,
             onRetryClick = {
-                val input = problemInput.text.toString().trim()
-                if (input.isNotEmpty() && NetworkUtils.isNetworkAvailable(requireContext())) {
+                val userInput = problemInput.text.toString().trim()
+                if (userInput.isNotBlank() && NetworkUtils.isNetworkAvailable(requireContext())) {
                     viewModel.resetErrorStates()
-                    viewModel.setUserInput(input)
+                    viewModel.setUserInput(userInput)
                     viewModel.generateTip()
-                } else if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                    // Still no internet, show the dialog again
-                    showNoConnectionDialog(false)
                 }
             }
         )
@@ -192,11 +172,37 @@ class TipInputFragment : Fragment() {
         noConnectionDialog?.show()
     }
     
+    private fun showCreditExhaustedDialog() {
+        // Dismiss existing dialog if any
+        creditExhaustedDialog?.dismiss()
+        
+        val dialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_credit_exhausted, null)
+        
+        val dialog = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+            
+        // Ensure dialog appears in center
+        dialog.window?.setGravity(android.view.Gravity.CENTER)
+        
+        // Set click listener for the OK button
+        dialogView.findViewById<View>(R.id.btnOk).setOnClickListener {
+            dialog.dismiss()
+            findNavController().navigateUp()
+        }
+        
+        creditExhaustedDialog = dialog
+        dialog.show()
+    }
+    
     override fun onDestroyView() {
         super.onDestroyView()
+        noConnectionDialog?.dismiss()
+        creditExhaustedDialog?.dismiss()
+        
         // Show bottom navigation when leaving this fragment
         (activity as? MainActivity)?.findViewById<View>(R.id.bottom_navigation)?.visibility = View.VISIBLE
-        noConnectionDialog?.dismiss()
-        noConnectionDialog = null
     }
 }
