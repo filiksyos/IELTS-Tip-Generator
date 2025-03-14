@@ -6,6 +6,8 @@ import com.example.data.DashboardCategory
 import com.example.data.models.SavedTip
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Manager class for saved tips using SharedPreferences
@@ -16,6 +18,10 @@ class SavedTipsManager(context: Context) {
         Context.MODE_PRIVATE
     )
     private val gson = Gson()
+    
+    // Cache for saved tips to avoid repeated deserialization
+    private var cachedTips: List<SavedTip>? = null
+    private var cachedFavoriteTips: List<SavedTip>? = null
 
     /**
      * Save a tip to SharedPreferences
@@ -25,21 +31,35 @@ class SavedTipsManager(context: Context) {
         savedTips.add(savedTip)
         val tipsJson = gson.toJson(savedTips)
         sharedPreferences.edit().putString(KEY_SAVED_TIPS, tipsJson).apply()
+        
+        // Update cache
+        cachedTips = savedTips
+        // Update favorites cache if needed
+        if (savedTip.isFavorite) {
+            cachedFavoriteTips = cachedFavoriteTips?.plus(savedTip) ?: listOf(savedTip)
+        }
     }
 
     /**
      * Get all saved tips from SharedPreferences
      */
     fun getSavedTips(): List<SavedTip> {
+        // Return cached tips if available
+        cachedTips?.let { return it }
+        
         val tipsJson = sharedPreferences.getString(KEY_SAVED_TIPS, null)
-        return if (tipsJson != null) {
+        val tips = if (tipsJson != null) {
             val type = object : TypeToken<List<SavedTip>>() {}.type
-            gson.fromJson(tipsJson, type)
+            gson.fromJson<List<SavedTip>>(tipsJson, type)
         } else {
             emptyList()
         }
+        
+        // Cache the result
+        cachedTips = tips
+        return tips
     }
-
+    
     /**
      * Get saved tips for a specific category
      */
@@ -55,6 +75,10 @@ class SavedTipsManager(context: Context) {
         val updatedTips = savedTips.filter { it.id != tipId }
         val tipsJson = gson.toJson(updatedTips)
         sharedPreferences.edit().putString(KEY_SAVED_TIPS, tipsJson).apply()
+        
+        // Update caches
+        cachedTips = updatedTips
+        cachedFavoriteTips = cachedFavoriteTips?.filter { it.id != tipId }
     }
 
     /**
@@ -66,9 +90,14 @@ class SavedTipsManager(context: Context) {
         
         if (tipIndex != -1) {
             val tip = savedTips[tipIndex]
-            savedTips[tipIndex] = tip.copy(isFavorite = !tip.isFavorite)
+            val updatedTip = tip.copy(isFavorite = !tip.isFavorite)
+            savedTips[tipIndex] = updatedTip
             val tipsJson = gson.toJson(savedTips)
             sharedPreferences.edit().putString(KEY_SAVED_TIPS, tipsJson).apply()
+            
+            // Update caches
+            cachedTips = savedTips
+            cachedFavoriteTips = null // Invalidate favorites cache
         }
     }
 
@@ -76,7 +105,14 @@ class SavedTipsManager(context: Context) {
      * Get all favorite tips
      */
     fun getFavoriteTips(): List<SavedTip> {
-        return getSavedTips().filter { it.isFavorite }
+        // Return cached favorites if available
+        cachedFavoriteTips?.let { return it }
+        
+        val favorites = getSavedTips().filter { it.isFavorite }
+        
+        // Cache the result
+        cachedFavoriteTips = favorites
+        return favorites
     }
 
     /**
@@ -84,6 +120,24 @@ class SavedTipsManager(context: Context) {
      */
     fun clearAllTips() {
         sharedPreferences.edit().remove(KEY_SAVED_TIPS).apply()
+        
+        // Clear caches
+        cachedTips = emptyList()
+        cachedFavoriteTips = emptyList()
+    }
+    
+    /**
+     * Suspend function to get saved tips off the main thread
+     */
+    suspend fun getSavedTipsAsync(): List<SavedTip> = withContext(Dispatchers.IO) {
+        getSavedTips()
+    }
+    
+    /**
+     * Suspend function to get favorite tips off the main thread
+     */
+    suspend fun getFavoriteTipsAsync(): List<SavedTip> = withContext(Dispatchers.IO) {
+        getFavoriteTips()
     }
 
     companion object {

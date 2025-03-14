@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.data.models.IELTSContent
 import com.example.data.models.SavedTip
@@ -18,6 +19,9 @@ import com.example.presentation.utils.NoConnectionDialog
 import com.example.presentation.viewModel.GetTipViewModel
 import com.example.presentation.viewModel.SavedTipsViewModel
 import com.google.android.material.button.MaterialButton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.androidx.viewmodel.ext.android.sharedViewModel
 
 class TipDisplayFragment : Fragment() {
@@ -32,6 +36,7 @@ class TipDisplayFragment : Fragment() {
     private lateinit var discardButton: MaterialButton
     
     private var noConnectionDialog: NoConnectionDialog? = null
+    private var isNavigating = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -141,10 +146,15 @@ class TipDisplayFragment : Fragment() {
         acceptButton.setOnClickListener {
             Log.e(TAG, "Accept button clicked")
             
+            // Prevent multiple clicks
+            if (isNavigating) return@setOnClickListener
+            isNavigating = true
+            
             // Check for internet connectivity when saving
             if (!NetworkUtils.isNetworkAvailable(requireContext())) {
                 Log.e(TAG, "No internet connection when trying to save tip")
                 showNoConnectionDialog(false)
+                isNavigating = false
                 return@setOnClickListener
             }
             
@@ -155,6 +165,12 @@ class TipDisplayFragment : Fragment() {
             
             if (category != null && tip.isNotEmpty() && explanation.isNotEmpty()) {
                 Log.e(TAG, "Saving tip for category: $category")
+                
+                // Disable buttons during save and navigation
+                acceptButton.isEnabled = false
+                discardButton.isEnabled = false
+                
+                // Create the tip object
                 val savedTip = SavedTip(
                     category = category,
                     tip = tip,
@@ -162,11 +178,25 @@ class TipDisplayFragment : Fragment() {
                     isFavorite = false // Initialize as not favorite
                 )
                 
-                savedTipsViewModel.saveTip(savedTip)
-                //Toast.makeText(context, "Tip saved successfully", Toast.LENGTH_SHORT).show()
-                
-                // Navigate to the dashboard using the new action
-                findNavController().navigate(R.id.action_tipDisplay_to_dashboard)
+                // Use coroutine to save tip and preload data before navigation
+                viewLifecycleOwner.lifecycleScope.launch {
+                    // Save tip in background thread
+                    withContext(Dispatchers.IO) {
+                        savedTipsViewModel.saveTip(savedTip)
+                    }
+                    
+                    // Preload data for dashboard before navigation
+                    withContext(Dispatchers.IO) {
+                        // This will ensure data is cached and ready when dashboard loads
+                        savedTipsViewModel.loadSavedTips()
+                    }
+                    
+                    // Show bottom navigation before navigating
+                    showBottomNavigation()
+                    
+                    // Navigate to dashboard
+                    findNavController().navigate(R.id.action_tipDisplay_to_dashboard)
+                }
             } else {
                 Log.e(TAG, "Cannot save tip: category=$category, tip=$tip, explanation=$explanation")
                 if (category == null) {
@@ -174,11 +204,24 @@ class TipDisplayFragment : Fragment() {
                 } else {
                     Toast.makeText(context, "Error: Tip or explanation is empty", Toast.LENGTH_SHORT).show()
                 }
+                isNavigating = false
             }
         }
         
         discardButton.setOnClickListener {
             Log.e(TAG, "Discard button clicked")
+            
+            // Prevent multiple clicks
+            if (isNavigating) return@setOnClickListener
+            isNavigating = true
+            
+            // Disable buttons during navigation
+            acceptButton.isEnabled = false
+            discardButton.isEnabled = false
+            
+            // Show bottom navigation before navigating
+            showBottomNavigation()
+            
             // Navigate back to get tip using the new action
             findNavController().navigate(R.id.action_tipDisplay_to_getTip)
             Toast.makeText(context, "Tip discarded", Toast.LENGTH_SHORT).show()

@@ -10,8 +10,12 @@ import com.example.presentation.R
 import com.example.presentation.databinding.DashboardCardviewItemsBinding
 import android.animation.ValueAnimator
 import android.animation.ArgbEvaluator
+import android.annotation.SuppressLint
 import android.graphics.Color
 import android.util.Log
+import android.view.View
+import androidx.core.animation.doOnEnd
+import androidx.recyclerview.widget.RecyclerView.RecycledViewPool
 
 class DashboardAdapter(
     private val onItemClick: (DashboardItems) -> Unit,
@@ -22,95 +26,70 @@ class DashboardAdapter(
     private val TAG = "DashboardAdapter"
     // Track which items have been animated
     private val animatedItems = mutableSetOf<String>()
-    // Track active animations with their start times
-    private val activeAnimations = mutableMapOf<String, Pair<ValueAnimator, Long>>()
+    // Track active animations
+    private val activeAnimations = mutableMapOf<String, ValueAnimator>()
+    // Shared recycled view pool for better performance
+    private val recycledViewPool = RecycledViewPool()
     
     // Animation constants
-    private val ANIMATION_DURATION = 5000L // 5 seconds
+    private val ANIMATION_DURATION = 1500L // 1.5 seconds (reduced from 5s)
     private val START_COLOR = Color.parseColor("#63c267") // Light green
     private val END_COLOR = Color.WHITE
 
-    inner class ItemViewHolder(val binding: DashboardCardviewItemsBinding) :
-        RecyclerView.ViewHolder(binding.root) {
+    inner class ItemViewHolder(private val binding: DashboardCardviewItemsBinding) : RecyclerView.ViewHolder(binding.root) {
         
-        private fun cancelExistingAnimation(itemId: String) {
-            activeAnimations[itemId]?.first?.let { animator ->
-                animator.removeAllListeners()
-                animator.cancel()
-                activeAnimations.remove(itemId)
-            }
-        }
-        
+        @SuppressLint("ResourceType")
         fun bind(item: DashboardItems) {
-            binding.apply {
+            with(binding) {
+                // Set basic item data
                 cardTitle.text = item.itemText
                 cardDescription.text = item.displayTip
                 
-                // Set favorite icon based on item's favorite status
+                // Set favorite icon state
                 favoriteIcon.setImageResource(
-                    if (item.isFavorite) R.xml.ic_favorite
-                    else R.xml.ic_favorite_border
+                    if (item.isFavorite) 
+                        R.xml.ic_favorite
+                    else 
+                        R.xml.ic_favorite_border
                 )
                 
-                // Handle background color and animation
+                // Handle background color animation for new items
                 if (item.color != null && !animatedItems.contains(item.id)) {
-                    // Check if there's an active animation
-                    val existingAnimation = activeAnimations[item.id]
-                    if (existingAnimation != null) {
-                        // Animation exists, calculate remaining duration
-                        val (animator, startTime) = existingAnimation
-                        val elapsedTime = System.currentTimeMillis() - startTime
-                        val remainingTime = ANIMATION_DURATION - elapsedTime
-                        
-                        if (remainingTime > 0) {
-                            // Continue existing animation
-                            animator.currentPlayTime = elapsedTime
-                        } else {
-                            // Animation should be complete
-                            root.setCardBackgroundColor(END_COLOR)
-                            animatedItems.add(item.id)
+                    // Cancel any existing animation for this item
+                    activeAnimations[item.id]?.cancel()
+                    
+                    // Create and start new animation
+                    val animator = ValueAnimator.ofObject(
+                        ArgbEvaluator(),
+                        START_COLOR,
+                        END_COLOR
+                    ).apply {
+                        duration = ANIMATION_DURATION
+                        addUpdateListener { animation ->
+                            root.setCardBackgroundColor(animation.animatedValue as Int)
+                        }
+                        doOnEnd {
+                            // Remove from active animations when complete
                             activeAnimations.remove(item.id)
+                            // Mark as animated
+                            animatedItems.add(item.id)
                         }
-                    } else {
-                        Log.d(TAG, "Starting new animation for item ${item.id}")
-                        // Start with green color
-                        root.setCardBackgroundColor(START_COLOR)
-                        
-                        // Create color animation
-                        val colorAnimation = ValueAnimator.ofObject(
-                            ArgbEvaluator(),
-                            START_COLOR,
-                            END_COLOR
-                        ).apply {
-                            duration = ANIMATION_DURATION
-                            addUpdateListener { animator ->
-                                if (root != null) {
-                                    val color = animator.animatedValue as Int
-                                    root.setCardBackgroundColor(color)
-                                }
-                            }
-                            addListener(object : android.animation.AnimatorListenerAdapter() {
-                                override fun onAnimationEnd(animation: android.animation.Animator) {
-                                    animatedItems.add(item.id)
-                                    activeAnimations.remove(item.id)
-                                    root?.setCardBackgroundColor(END_COLOR)
-                                }
-                            })
-                        }
-                        
-                        // Store animation with start time
-                        activeAnimations[item.id] = Pair(colorAnimation, System.currentTimeMillis())
-                        colorAnimation.start()
+                        start()
                     }
+                    
+                    // Store the animation
+                    activeAnimations[item.id] = animator
                 } else {
-                    // If already animated or no color specified, set to white
-                    root.setCardBackgroundColor(END_COLOR)
+                    // Set default background for non-animated items
+                    root.setCardBackgroundColor(Color.WHITE)
                 }
                 
-                // Set click listener for the card
-                root.setOnClickListener { onItemClick(item) }
+                // Set click listeners
+                root.setOnClickListener {
+                    onItemClick(item)
+                }
                 
-                // Set click listener for the favorite icon
+                // Note: There's no deleteIcon in the layout, so we'll use the favoriteIcon for toggling favorites
                 favoriteIcon.setOnClickListener {
                     onFavoriteToggle(item.id)
                 }
@@ -129,10 +108,21 @@ class DashboardAdapter(
         val item = getItem(position)
         holder.bind(item)
     }
-
+    
     override fun onViewRecycled(holder: ItemViewHolder) {
         super.onViewRecycled(holder)
-        // Don't cancel animations on recycle, let them continue
+        // Clean up any resources when view is recycled
+    }
+    
+    override fun onFailedToRecycleView(holder: ItemViewHolder): Boolean {
+        // Ensure view can be recycled even if it has animations
+        return true
+    }
+    
+    fun clearAnimations() {
+        // Cancel all active animations
+        activeAnimations.values.forEach { it.cancel() }
+        activeAnimations.clear()
     }
 
     class DashboardDiffCallback : DiffUtil.ItemCallback<DashboardItems>() {
@@ -141,7 +131,9 @@ class DashboardAdapter(
         }
 
         override fun areContentsTheSame(oldItem: DashboardItems, newItem: DashboardItems): Boolean {
-            return oldItem == newItem && oldItem.color == newItem.color
+            return oldItem.displayTip == newItem.displayTip && 
+                   oldItem.explanation == newItem.explanation &&
+                   oldItem.isFavorite == newItem.isFavorite
         }
     }
 }

@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -17,6 +18,9 @@ import com.example.presentation.databinding.FragmentDashboardBinding
 import com.example.presentation.viewModel.DashboardViewModel
 import com.example.presentation.viewModel.SavedTipsViewModel
 import com.google.android.material.tabs.TabLayout
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.androidx.viewmodel.ext.android.sharedViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -28,6 +32,9 @@ class DashboardFragment : Fragment() {
     private var _binding: FragmentDashboardBinding? = null
     private val binding get() = _binding!!
     private lateinit var adapter: DashboardAdapter
+    
+    // Flag to track if we need to scroll to a new item
+    private var shouldScrollToNewItem = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -41,16 +48,21 @@ class DashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
-        setupRecyclerView()
-        setupTabLayout()
-        setupSwipeToDelete()
-        observeViewModel()
-
         // Set title
         binding.dashboardTitle.text = "My Library"
         
         // Disable swipe refresh functionality
         binding.swipeRefreshLayout.isEnabled = false
+        
+        setupRecyclerView()
+        setupTabLayout()
+        setupSwipeToDelete()
+        
+        // Preload the RecyclerView with empty state while data loads
+        updateEmptyState(emptyList())
+        
+        // Observe ViewModel after UI setup
+        observeViewModel()
     }
     
     private fun setupRecyclerView() {
@@ -72,6 +84,8 @@ class DashboardFragment : Fragment() {
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = this@DashboardFragment.adapter
+            // Set initial item animator to null to prevent animations on first load
+            itemAnimator = null
         }
     }
     
@@ -115,14 +129,14 @@ class DashboardFragment : Fragment() {
         // Observe all tips
         savedTipsViewModel.savedTips.observe(viewLifecycleOwner) { savedTips ->
             if (!savedTipsViewModel.showingFavorites.value!!) {
-                updateUI(savedTips)
+                updateUIWithTips(savedTips)
             }
         }
         
         // Observe favorite tips
         savedTipsViewModel.favoriteTips.observe(viewLifecycleOwner) { favoriteTips ->
             if (savedTipsViewModel.showingFavorites.value!!) {
-                updateUI(favoriteTips)
+                updateUIWithTips(favoriteTips)
             }
         }
         
@@ -133,9 +147,9 @@ class DashboardFragment : Fragment() {
             
             // Update the UI with the appropriate list
             if (showingFavorites) {
-                updateUI(savedTipsViewModel.favoriteTips.value ?: emptyList())
+                updateUIWithTips(savedTipsViewModel.favoriteTips.value ?: emptyList())
             } else {
-                updateUI(savedTipsViewModel.savedTips.value ?: emptyList())
+                updateUIWithTips(savedTipsViewModel.savedTips.value ?: emptyList())
             }
         }
         
@@ -143,13 +157,44 @@ class DashboardFragment : Fragment() {
         dashboardViewModel.remainingCredits.observe(viewLifecycleOwner) { credits ->
             binding.creditCounter.text = credits.toString()
         }
-        
-        // Load saved tips when fragment is created
-        savedTipsViewModel.loadSavedTips()
-        savedTipsViewModel.loadFavoriteTips()
     }
     
-    private fun updateUI(savedTips: List<SavedTip>) {
+    private fun updateUIWithTips(savedTips: List<SavedTip>) {
+        // Update empty state immediately
+        updateEmptyState(savedTips)
+        
+        // Process items in a background thread
+        viewLifecycleOwner.lifecycleScope.launch {
+            val dashboardItems = withContext(Dispatchers.Default) {
+                // Convert SavedTip to DashboardItems for the adapter
+                savedTips.map { savedTip ->
+                    DashboardItems(
+                        id = savedTip.id,
+                        itemText = savedTip.category.title,
+                        cardType = "Tip",
+                        color = if (savedTipsViewModel.isNewlyCreatedTip(savedTip.id)) 
+                            android.graphics.Color.parseColor("#A5D6A7") else null,
+                        explanation = savedTip.explanation,
+                        displayTip = savedTip.tip,
+                        isFavorite = savedTip.isFavorite
+                    )
+                }
+            }
+            
+            // Check if we need to scroll to a new item
+            shouldScrollToNewItem = dashboardItems.any { it.color != null }
+            
+            // Submit list to adapter on main thread
+            adapter.submitList(dashboardItems) {
+                // This callback is invoked when the list update is complete
+                if (shouldScrollToNewItem) {
+                    scrollToNewItem(dashboardItems)
+                }
+            }
+        }
+    }
+    
+    private fun updateEmptyState(savedTips: List<SavedTip>) {
         if (savedTips.isEmpty()) {
             binding.emptyStateText.visibility = View.VISIBLE
             binding.emptyStateText.text = if (savedTipsViewModel.showingFavorites.value!!) {
@@ -157,34 +202,23 @@ class DashboardFragment : Fragment() {
             } else {
                 "No saved tips yet. Go to 'Get Tips' to create some!"
             }
+            binding.recyclerView.visibility = View.GONE
         } else {
             binding.emptyStateText.visibility = View.GONE
+            binding.recyclerView.visibility = View.VISIBLE
         }
-        
-        // Convert SavedTip to DashboardItems for the adapter
-        val dashboardItems = savedTips.map { savedTip ->
-            DashboardItems(
-                id = savedTip.id,
-                itemText = savedTip.category.title,
-                cardType = "Tip",
-                color = if (savedTipsViewModel.isNewlyCreatedTip(savedTip.id)) 
-                    android.graphics.Color.parseColor("#A5D6A7") else null,
-                explanation = savedTip.explanation,
-                displayTip = savedTip.tip,
-                isFavorite = savedTip.isFavorite
-            )
-        }
-        
-        // Submit list to adapter
-        adapter.submitList(dashboardItems)
-        
-        // If this is a new tip, scroll to it
+    }
+    
+    private fun scrollToNewItem(dashboardItems: List<DashboardItems>) {
         dashboardItems.find { it.color != null }?.let { newItem ->
             val position = dashboardItems.indexOfFirst { it.id == newItem.id }
             if (position != -1) {
-                binding.recyclerView.smoothScrollToPosition(position)
-                // Clear the creation tracking after we've handled it
-                savedTipsViewModel.clearNewTipTracking()
+                binding.recyclerView.post {
+                    binding.recyclerView.smoothScrollToPosition(position)
+                    // Clear the creation tracking after we've handled it
+                    savedTipsViewModel.clearNewTipTracking()
+                    shouldScrollToNewItem = false
+                }
             }
         }
     }
