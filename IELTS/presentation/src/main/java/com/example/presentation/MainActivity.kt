@@ -12,6 +12,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.example.data.preferences.PreferencesManager
 import com.example.presentation.utils.NetworkUtils
 import com.example.presentation.utils.NoConnectionDialog
+import com.google.android.gms.ads.MobileAds
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import org.koin.android.ext.android.inject
 
