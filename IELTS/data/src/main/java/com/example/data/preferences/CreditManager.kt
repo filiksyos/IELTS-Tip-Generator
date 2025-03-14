@@ -75,6 +75,6 @@ class CreditManager(context: Context) {
         private const val PREFERENCES_NAME = "ielts_credit_preferences"
         private const val KEY_REMAINING_CREDITS = "remaining_credits"
         private const val KEY_LAST_RESET_DATE = "last_reset_date"
-        private const val DEFAULT_DAILY_CREDITS = 3 // Default daily credit limit
+        private const val DEFAULT_DAILY_CREDITS = 15 // Default daily credit limit
     }
 } 
